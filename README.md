@@ -1,5 +1,11 @@
 # microddp
 
+Data Parallelism from Scratch
+
+## Overview
+
+This course teaches Data Parallelism (DP) by building it from scratch, step by step.
+
 ![](docs/microddp.png)
 
 ## Quick Start
@@ -48,5 +54,5 @@ See [kiankyars.github.io/microddp/](https://kiankyars.github.io/microddp/) for d
 
 ## Acknowledgements
 
-Simon Boehm, TE Hao
+
 
