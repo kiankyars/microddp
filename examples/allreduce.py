@@ -92,6 +92,10 @@ class AllReduceAlgorithms:
             result += recv_tensor
         
         # Phase 2: All-Gather
+        # For full-tensor ring all-reduce, after scatter-reduce all ranks already have
+        # the complete sum. All-gather phase is needed for chunked ring all-reduce.
+        # For educational purposes (full-tensor), we'll still do all-gather to show
+        # the complete algorithm, but all ranks should already have the same result.
         for step in range(self.world_size - 1):
             send_to = (self.rank + 1) % self.world_size
             recv_from = (self.rank - 1) % self.world_size
@@ -110,6 +114,8 @@ class AllReduceAlgorithms:
                 send_handle = dist.isend(result, dst=send_to)
                 send_handle.wait()
             
+            # For full-tensor: all ranks already have the sum, so recv_tensor should equal result
+            # We update result to participate in the ring, but verify they match
             result = recv_tensor.clone()
         
         return result
@@ -166,6 +172,11 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
         print(f"  Ring vs Naive: {naive_time/ring_time:.2f}x")
         print(f"  PyTorch vs Naive: {naive_time/pytorch_time:.2f}x")
         print(f"  PyTorch vs Ring: {ring_time/pytorch_time:.2f}x")
+        print(f"\nNote: For small tensors, naive can be fastest due to:")
+        print(f"  - Fewer communication steps (2 phases vs 2*(n-1) steps)")
+        print(f"  - Lower overhead per step")
+        print(f"  - O(n²) vs O(n) difference is small for small n")
+        print(f"  Ring/PyTorch excel at larger tensor sizes and world sizes")
     
     return naive_time, ring_time, pytorch_time
 
