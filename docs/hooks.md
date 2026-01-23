@@ -90,7 +90,7 @@ def make_bucketed_hook(bucket):
 
 ## Measuring Overlap
 
-See `src/hooks_demo.py` for tools to:
+See `examples/hooks.py` for tools to:
 - Track hook execution order
 - Measure computation/communication overlap
 - Compare hook-based vs manual all-reduce

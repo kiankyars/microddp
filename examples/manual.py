@@ -34,7 +34,9 @@ torch.manual_seed(42)
 device1 = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device2 = torch.device("cuda:1" if torch.cuda.is_available() and torch.cuda.device_count() > 1 else "cpu")
 
+# Initialize models with same seed to ensure identical starting weights
 model1 = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device1)
+torch.manual_seed(42)  # Reset seed so model2 has same initial weights
 model2 = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device2)
 
 optimizer1 = optim.Adam(model1.parameters(), lr=0.001)
@@ -78,13 +80,6 @@ for step in range(STEPS):
 
     optimizer1.step()
     optimizer2.step()
-
-    # Sync model weights (optional, but ensures consistency)
-    with torch.no_grad():
-        for p1, p2 in zip(model1.parameters(), model2.parameters()):
-            avg_weight = (p1 + p2) / 2.0
-            p1.copy_(avg_weight)
-            p2.copy_(avg_weight)
 
     if step % 5 == 0:
         avg_loss = (loss1.item() + loss2.item()) / 2.0

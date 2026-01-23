@@ -1,6 +1,6 @@
 ## Syllabus
 
-### [Monolith](https://github.com/kiankyars/microddp/blob/main/src/monolith.py)
+### [Baseline](https://github.com/kiankyars/microddp/blob/main/src/baseline.py)
 
 - **Concept:** Establish a baseline on a single CPU/GPU.
 - **Lab:** Just `nn.Sequential` with 16 layers and a simple training loop.
@@ -12,7 +12,7 @@
   - **Training Time:** Days on a single GPU.
   - **Solution:** Data Parallelism (replicate model, split data).
 
-### [Manual](https://github.com/kiankyars/microddp/blob/main/src/manual.py)
+### [Manual](https://github.com/kiankyars/microddp/blob/main/examples/manual.py)
 
 Manually split the batch across two "GPUs" and average gradients.
 
@@ -96,29 +96,9 @@ Manually split the batch across two "GPUs" and average gradients.
 - **DDP:** Gradient hooks for automatic synchronization during backward.
 - **Bucketing:** Optional bucketed hooks for better efficiency.
 
-**4. `allreduce.py` (First Principles)**
-
-- **AllReduceAlgorithms:** Educational implementations of all-reduce algorithms.
-- **naive_all_reduce():** O(n²) implementation for comparison.
-- **ring_all_reduce():** O(n) ring implementation.
-- **compare_all_reduce_algorithms():** Performance benchmarking.
-
-**5. `bucketing.py` (Optimization)**
+**4. `bucketing.py` (Optimization)**
 
 - **GradientBucket:** Groups parameters and their gradients.
 - **BucketedDDPHooks:** Manages buckets and registers hooks.
 - **compare_bucketed_vs_unbucketed():** Performance comparison.
-
-**6. `hooks_demo.py` (Demonstration)**
-
-- **HookTracker:** Tracks hook execution order.
-- **demonstrate_hook_order():** Shows reverse execution order.
-- **demonstrate_overlap():** Measures computation/communication overlap.
-
-**7. `performance.py` (Analysis)**
-
-- **DDPPerformanceAnalyzer:** Detailed timing breakdown.
-- **analyze_scaling_efficiency():** Scaling analysis.
-- **estimate_communication_time():** Communication estimation.
-- **communication_complexity_analysis():** Complexity comparison.
 

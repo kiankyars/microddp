@@ -11,9 +11,9 @@ TOTAL_LAYERS = 16
 STEPS = 50
 
 
-# 2. The Monolithic Model
-# This is what we will replicate across multiple GPUs
-class MonolithicMLP(nn.Module):
+# 2. The Baseline Model
+# This is what we will replicate across multiple GPUs in data parallelism
+class BaselineMLP(nn.Module):
     def __init__(self, dim, depth):
         super().__init__()
         layers = []
@@ -32,7 +32,7 @@ class MonolithicMLP(nn.Module):
 # 3. Setup
 torch.manual_seed(42)
 
-model = MonolithicMLP(HIDDEN_DIM, TOTAL_LAYERS)
+model = BaselineMLP(HIDDEN_DIM, TOTAL_LAYERS)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Generate one fixed batch to overfit
@@ -41,7 +41,7 @@ fixed_input = torch.randn(BATCH_SIZE, HIDDEN_DIM)
 fixed_target = torch.randint(0, 2, (BATCH_SIZE,))
 
 # 4. Training Loop
-print("--- Training Monolith (Ground Truth) ---")
+print("--- Training Baseline (Single GPU) ---")
 start_time = time.time()
 model.train()
 for step in range(STEPS):

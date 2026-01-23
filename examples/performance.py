@@ -11,7 +11,7 @@ import time
 import torch
 import torch.distributed as dist
 from typing import Dict, List, Tuple
-from comms import DataParallelComms
+from src.comms import DataParallelComms
 
 
 class DDPPerformanceAnalyzer:

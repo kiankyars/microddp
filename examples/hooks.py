@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.distributed as dist
 from typing import List
-from comms import DataParallelComms
+from src.comms import DataParallelComms
 
 
 class HookTracker:

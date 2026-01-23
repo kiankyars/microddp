@@ -118,10 +118,8 @@ class AllReduceAlgorithms:
             recv_tensor = torch.zeros_like(accumulated)
             dist.recv(recv_tensor, src=recv_from)
             
-            if op == dist.ReduceOp.SUM:
-                accumulated += recv_tensor
-            elif op == dist.ReduceOp.MEAN:
-                accumulated += recv_tensor
+            # Always accumulate (SUM operation)
+            accumulated += recv_tensor
         
         # Phase 2: All-Gather
         # Now we broadcast the final chunks around the ring
@@ -157,6 +155,8 @@ class AllReduceAlgorithms:
         Works on the full tensor (not chunked) to make the pattern clearer.
         
         This is less bandwidth-efficient but easier to understand.
+        
+        Note: Uses non-blocking operations to avoid deadlock in ring topology.
         """
         result = tensor.clone()
         
@@ -165,31 +165,48 @@ class AllReduceAlgorithms:
             send_to = (self.rank + 1) % self.world_size
             recv_from = (self.rank - 1) % self.world_size
             
-            # Send current accumulated result
-            dist.send(result, dst=send_to)
+            # Use non-blocking operations to avoid deadlock
+            # Even ranks send first, odd ranks receive first
+            if self.rank % 2 == 0:
+                # Even ranks: send then receive
+                send_handle = dist.isend(result, dst=send_to)
+                recv_tensor = torch.zeros_like(result)
+                dist.recv(recv_tensor, src=recv_from)
+                send_handle.wait()
+            else:
+                # Odd ranks: receive then send
+                recv_tensor = torch.zeros_like(result)
+                dist.recv(recv_tensor, src=recv_from)
+                send_handle = dist.isend(result, dst=send_to)
+                send_handle.wait()
             
-            # Receive and accumulate
-            recv_tensor = torch.zeros_like(result)
-            dist.recv(recv_tensor, src=recv_from)
-            
-            if op == dist.ReduceOp.SUM:
-                result += recv_tensor
-            elif op == dist.ReduceOp.MEAN:
-                result += recv_tensor
+            # Always accumulate (SUM operation)
+            result += recv_tensor
         
         # Phase 2: All-Gather
         for step in range(self.world_size - 1):
             send_to = (self.rank + 1) % self.world_size
             recv_from = (self.rank - 1) % self.world_size
             
-            dist.send(result, dst=send_to)
-            recv_tensor = torch.zeros_like(result)
-            dist.recv(recv_tensor, src=recv_from)
+            # Use non-blocking operations to avoid deadlock
+            if self.rank % 2 == 0:
+                # Even ranks: send then receive
+                send_handle = dist.isend(result, dst=send_to)
+                recv_tensor = torch.zeros_like(result)
+                dist.recv(recv_tensor, src=recv_from)
+                send_handle.wait()
+            else:
+                # Odd ranks: receive then send
+                recv_tensor = torch.zeros_like(result)
+                dist.recv(recv_tensor, src=recv_from)
+                send_handle = dist.isend(result, dst=send_to)
+                send_handle.wait()
+            
             result = recv_tensor.clone()
         
-        # Average if needed
-        if op == dist.ReduceOp.MEAN:
-            result.div_(self.world_size)
+        # Note: PyTorch doesn't have ReduceOp.MEAN
+        # To get mean, call with SUM and divide by world_size yourself
+        # or use all_reduce_mean() wrapper
         
         return result
 
@@ -234,3 +251,61 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
         print(f"Speedup: {ring_time/pytorch_time:.2f}x")
     
     return ring_time, pytorch_time
+
+
+def main():
+    """
+    Example: Comparing All-Reduce Algorithms
+    
+    This script demonstrates the difference between naive and ring all-reduce.
+    Run with: torchrun --nproc-per-node=4 examples/allreduce.py
+    """
+    import os
+    from src.comms import init_distributed, DataParallelComms
+    
+    # Initialize distributed environment
+    rank, world_size, device = init_distributed()
+    comms = DataParallelComms(rank, world_size)
+    
+    if rank == 0:
+        print(f"=== All-Reduce Algorithm Comparison ===\n")
+        print(f"World size: {world_size}")
+        print(f"Device: {device}\n")
+    
+    # Create test tensor
+    tensor_size = 1000
+    tensor = torch.randn(tensor_size, device=device)
+    
+    # Initialize algorithms
+    algorithms = AllReduceAlgorithms(rank, world_size)
+    
+    # Test ring all-reduce
+    dist.barrier()
+    result_ring = algorithms.ring_all_reduce_simple(tensor.clone())
+    dist.barrier()
+    
+    # Test PyTorch's optimized all-reduce
+    result_pytorch = tensor.clone()
+    dist.barrier()
+    dist.all_reduce(result_pytorch, op=dist.ReduceOp.SUM)
+    result_pytorch.div_(world_size)  # Average
+    dist.barrier()
+    
+    # Verify results are similar
+    if rank == 0:
+        diff = (result_ring - result_pytorch).abs().max()
+        print(f"Max difference between implementations: {diff.item():.6f}")
+        print(f"Results match: {diff.item() < 1e-5}\n")
+    
+    # Performance comparison
+    if rank == 0:
+        print("Running performance comparison...")
+    
+    compare_all_reduce_algorithms(rank, world_size, tensor_size=10000, num_iterations=20)
+    
+    # Cleanup
+    dist.destroy_process_group()
+
+
+if __name__ == "__main__":
+    main()

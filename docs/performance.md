@@ -120,7 +120,7 @@ When GPU memory is the limit:
 
 ## Performance Tools
 
-See `src/performance.py` for:
+See `examples/performance.py` for:
 - `DDPPerformanceAnalyzer`: Detailed timing breakdown
 - `analyze_scaling_efficiency()`: Scaling analysis
 - `estimate_communication_time()`: Communication estimation

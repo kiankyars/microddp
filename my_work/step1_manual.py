@@ -74,8 +74,6 @@ for step in range(STEPS):
     optimizer1.step()
     optimizer2.step()
 
-    # TODO: Sync model weights (optional, but ensures consistency)
-
     if step % 5 == 0:
         avg_loss = (loss1.item() + loss2.item()) / 2.0
         print(f"Step {step:02d} | Loss: {avg_loss:.6f}")
