@@ -41,12 +41,12 @@ Manually split the batch across two "GPUs" and average gradients.
 #### [Gradient Hooks](./hooks.md)
 
 - **Concept:** How hooks enable automatic gradient synchronization.
-- **Demo:** Run `examples/demo_hooks.py` to see hook vs manual timing comparison.
+- **Demo:** Run `examples/hooks.py` to see hook vs manual timing comparison.
 
 #### [Gradient Bucketing](./bucketing.md)
 
 - **Concept:** Group small gradients into buckets for efficiency.
-- **Demo:** Run `examples/demo_bucketing.py` to see performance improvement.
+- **Demo:** Run `src/bucketing.py` to see performance improvement.
 
 #### [Synchronization Primitives](./sync_primitives.md)
 

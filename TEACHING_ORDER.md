@@ -50,16 +50,15 @@
 
 ## 9. Gradient Hooks (Demo)
 - **Doc:** [Gradient Hooks](./docs/hooks.md)
-- **Demo:** Run `examples/demo_hooks.py` (no user changes needed)
+- **Demo:** Run `examples/hooks.py` (no user changes needed)
 - **Concepts:** Hook execution order (reverse), computation/communication overlap
 - **Shows:** `compare_hook_vs_manual_timing()` comparison
 
 ## 10. Gradient Bucketing (Demo)
 - **Doc:** [Gradient Bucketing](./docs/bucketing.md)
-- **Demo:** Run `examples/demo_bucketing.py` (no user changes needed)
+- **Demo:** Run `src/bucketing.py` (no user changes needed)
 - **Concepts:** Group gradients into buckets, fewer messages, better bandwidth
 - **Shows:** `compare_bucketed_vs_unbucketed()` performance comparison
-- **Implementation:** `src/bucketing.py`
 
 ## 11. Synchronization Primitives
 - **Doc:** [Synchronization Primitives](./docs/sync_primitives.md)

@@ -214,3 +214,24 @@ def compare_hook_vs_manual_timing(model, comms, input_chunk, target_chunk, devic
         print("- Model architecture (layer sizes)")
         print("- Network bandwidth")
         print("- Whether communication overlaps with computation")
+
+
+if __name__ == "__main__":
+    import torch.optim as optim
+    from src.comms import init_distributed
+    from src.model import FullMLP
+    
+    # Initialize
+    rank, world_size, device = init_distributed()
+    comms = DataParallelComms(rank, world_size)
+    
+    # Setup model and data
+    model = FullMLP(128, 16).to(device)
+    chunk_size = 32 // world_size
+    input_chunk = torch.randn(chunk_size, 128, device=device)
+    target_chunk = torch.randint(0, 2, (chunk_size,), device=device)
+    
+    # Run comparison
+    compare_hook_vs_manual_timing(model, comms, input_chunk, target_chunk, device)
+    
+    torch.distributed.destroy_process_group()

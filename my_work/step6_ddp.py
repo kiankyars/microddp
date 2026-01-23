@@ -27,10 +27,10 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # TODO: Register gradient hooks for automatic all-reduce during backward
 # register_ddp_hooks(model, comms)
 
-# Split batch across ranks
+# TODO: Split batch across ranks
 chunk_size = BATCH_SIZE // world_size
-start_idx = rank * chunk_size
-end_idx = start_idx + chunk_size
+start_idx = None
+end_idx = None
 
 full_input = torch.randn(BATCH_SIZE, HIDDEN_DIM)
 full_target = torch.randint(0, 2, (BATCH_SIZE,))

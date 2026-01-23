@@ -189,4 +189,31 @@ def compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, devi
         optimizer2.step()
     bucketed_time = time.time() - start
     
+    if comms.rank == 0:
+        print(f"\n=== Bucketing Performance Comparison ===")
+        print(f"Unbucketed time: {unbucketed_time*1000:.2f} ms")
+        print(f"Bucketed time: {bucketed_time*1000:.2f} ms")
+        print(f"Speedup: {unbucketed_time/bucketed_time:.2f}x")
+    
     return unbucketed_time, bucketed_time
+
+
+if __name__ == "__main__":
+    import torch.optim as optim
+    from src.comms import init_distributed, DataParallelComms
+    from src.model import FullMLP
+    
+    # Initialize
+    rank, world_size, device = init_distributed()
+    comms = DataParallelComms(rank, world_size)
+    
+    # Setup model and data
+    model = FullMLP(128, 16).to(device)
+    chunk_size = 32 // world_size
+    input_chunk = torch.randn(chunk_size, 128, device=device)
+    target_chunk = torch.randint(0, 2, (chunk_size,), device=device)
+    
+    # Run comparison
+    compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, device)
+    
+    torch.distributed.destroy_process_group()

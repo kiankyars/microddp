@@ -103,10 +103,10 @@ See `examples/hooks.py` for tools to:
 
 ## Demo
 
-Run `examples/demo_hooks.py` to see the hook vs manual all-reduce timing comparison. No user changes needed - the demo shows how hooks enable computation/communication overlap.
+Run `examples/hooks.py` to see the hook vs manual all-reduce timing comparison. No user changes needed - the demo shows how hooks enable computation/communication overlap.
 
 ```bash
-torchrun --nproc-per-node=4 examples/demo_hooks.py
+torchrun --nproc-per-node=4 examples/hooks.py
 ```
 
 ## Common Pitfalls

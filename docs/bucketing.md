@@ -88,10 +88,10 @@ The larger the model, the more benefit from bucketing!
 
 ## Demo
 
-Run `examples/demo_bucketing.py` to see the performance improvement from bucketing. No user changes needed - the demo compares bucketed vs unbucketed gradient synchronization.
+Run `src/bucketing.py` to see the performance improvement from bucketing. No user changes needed - the demo compares bucketed vs unbucketed gradient synchronization.
 
 ```bash
-torchrun --nproc-per-node=4 examples/demo_bucketing.py
+torchrun --nproc-per-node=4 src/bucketing.py
 ```
 
 ## Example
