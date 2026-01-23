@@ -11,6 +11,9 @@ Key Concepts:
 
 import torch
 import torch.distributed as dist
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 class AllReduceAlgorithms:
@@ -53,101 +56,6 @@ class AllReduceAlgorithms:
         dist.broadcast(result, src=0)
         
         return result
-
-    def ring_all_reduce(self, tensor, op=dist.ReduceOp.SUM):
-        """
-        Ring All-Reduce: O(n) communication complexity, optimal bandwidth
-        
-        Algorithm (2 phases):
-        Phase 1 - Scatter-Reduce:
-        - Data moves in a ring: rank i sends to rank (i+1) mod n
-        - Each rank accumulates partial sums
-        - After n-1 steps, each rank has a chunk of the final sum
-        
-        Phase 2 - All-Gather:
-        - Same ring pattern, but now broadcasting the final chunks
-        - After n-1 steps, all ranks have the complete result
-        
-        Total steps: 2*(n-1) = O(n)
-        Each step: one send, one receive per rank
-        Total messages: 2*(n-1) = O(n) (optimal!)
-        """
-        chunk_size = tensor.numel() // self.world_size
-        if chunk_size == 0:
-            chunk_size = tensor.numel()
-        
-        # Reshape tensor into chunks for ring communication
-        tensor_flat = tensor.flatten()
-        chunks = []
-        for i in range(self.world_size):
-            start_idx = i * chunk_size
-            end_idx = min((i + 1) * chunk_size, tensor.numel())
-            if i < self.world_size - 1:
-                chunks.append(tensor_flat[start_idx:end_idx].clone())
-            else:
-                # Last chunk gets remainder
-                chunks.append(tensor_flat[start_idx:].clone())
-        
-        # Pad chunks to same size if needed
-        max_chunk_size = max(c.numel() for c in chunks)
-        for i, chunk in enumerate(chunks):
-            if chunk.numel() < max_chunk_size:
-                padding = torch.zeros(max_chunk_size - chunk.numel(), 
-                                     dtype=chunk.dtype, device=chunk.device)
-                chunks[i] = torch.cat([chunk, padding])
-        
-        # Phase 1: Scatter-Reduce
-        # Each rank starts with its own chunk
-        my_chunk_idx = self.rank
-        accumulated = chunks[my_chunk_idx].clone()
-        
-        for step in range(self.world_size - 1):
-            # Send to next rank in ring
-            send_to = (self.rank + 1) % self.world_size
-            # Receive from previous rank in ring
-            recv_from = (self.rank - 1) % self.world_size
-            
-            # Calculate which chunk we're working on in this step
-            chunk_idx = (self.rank - step) % self.world_size
-            
-            # Send our current accumulated chunk
-            send_tensor = accumulated.clone()
-            dist.send(send_tensor, dst=send_to)
-            
-            # Receive and accumulate
-            recv_tensor = torch.zeros_like(accumulated)
-            dist.recv(recv_tensor, src=recv_from)
-            
-            # Always accumulate (SUM operation)
-            accumulated += recv_tensor
-        
-        # Phase 2: All-Gather
-        # Now we broadcast the final chunks around the ring
-        result_chunks = [None] * self.world_size
-        result_chunks[my_chunk_idx] = accumulated.clone()
-        
-        for step in range(self.world_size - 1):
-            send_to = (self.rank + 1) % self.world_size
-            recv_from = (self.rank - 1) % self.world_size
-            
-            # Calculate which chunk we're broadcasting in this step
-            chunk_idx = (self.rank - step - 1) % self.world_size
-            
-            # Send the chunk we have
-            if result_chunks[chunk_idx] is not None:
-                dist.send(result_chunks[chunk_idx], dst=send_to)
-            
-            # Receive and store
-            recv_tensor = torch.zeros_like(accumulated)
-            dist.recv(recv_tensor, src=recv_from)
-            result_chunks[(chunk_idx - 1) % self.world_size] = recv_tensor.clone()
-        
-        # Reconstruct the full tensor from chunks
-        result = torch.cat([chunk[:chunks[i].numel()] 
-                           for i, chunk in enumerate(result_chunks)], dim=0)
-        
-        # Reshape to original shape
-        return result.reshape(tensor.shape)
 
     def ring_all_reduce_simple(self, tensor, op=dist.ReduceOp.SUM):
         """
@@ -218,14 +126,23 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
     
     # Warmup
     for _ in range(3):
+        _ = algorithms.naive_all_reduce(tensor.clone())
         _ = algorithms.ring_all_reduce_simple(tensor.clone())
         dist.barrier()
+    
+    # Benchmark naive all-reduce
+    dist.barrier()
+    start = time.time()
+    for _ in range(num_iterations):
+        _ = algorithms.naive_all_reduce(tensor.clone())
+        dist.barrier()
+    naive_time = (time.time() - start) / num_iterations
     
     # Benchmark ring all-reduce
     dist.barrier()
     start = time.time()
     for _ in range(num_iterations):
-        result_ring = algorithms.ring_all_reduce_simple(tensor.clone())
+        _ = algorithms.ring_all_reduce_simple(tensor.clone())
         dist.barrier()
     ring_time = (time.time() - start) / num_iterations
     
@@ -242,11 +159,15 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
         print(f"\n=== All-Reduce Performance Comparison ===")
         print(f"Tensor size: {tensor_size}")
         print(f"World size: {world_size}")
+        print(f"Naive All-Reduce: {naive_time*1000:.2f} ms")
         print(f"Ring All-Reduce (simple): {ring_time*1000:.2f} ms")
         print(f"PyTorch All-Reduce: {pytorch_time*1000:.2f} ms")
-        print(f"Speedup: {ring_time/pytorch_time:.2f}x")
+        print(f"\nSpeedups:")
+        print(f"  Ring vs Naive: {naive_time/ring_time:.2f}x")
+        print(f"  PyTorch vs Naive: {naive_time/pytorch_time:.2f}x")
+        print(f"  PyTorch vs Ring: {ring_time/pytorch_time:.2f}x")
     
-    return ring_time, pytorch_time
+    return naive_time, ring_time, pytorch_time
 
 
 def main():
@@ -275,23 +196,38 @@ def main():
     # Initialize algorithms
     algorithms = AllReduceAlgorithms(rank, world_size)
     
-    # Test ring all-reduce
-    dist.barrier()
-    result_ring = algorithms.ring_all_reduce_simple(tensor.clone())
+    # Test all three methods and verify they produce the same result
     dist.barrier()
     
-    # Test PyTorch's optimized all-reduce
+    # 1. Naive all-reduce (SUM)
+    result_naive = algorithms.naive_all_reduce(tensor.clone(), op=dist.ReduceOp.SUM)
+    dist.barrier()
+    
+    # 2. Ring all-reduce (SUM)
+    result_ring = algorithms.ring_all_reduce_simple(tensor.clone(), op=dist.ReduceOp.SUM)
+    dist.barrier()
+    
+    # 3. PyTorch's optimized all-reduce (SUM)
     result_pytorch = tensor.clone()
-    dist.barrier()
     dist.all_reduce(result_pytorch, op=dist.ReduceOp.SUM)
-    result_pytorch.div_(world_size)  # Average
     dist.barrier()
     
-    # Verify results are similar
+    # Verify all three produce the same SUM result
     if rank == 0:
-        diff = (result_ring - result_pytorch).abs().max()
-        print(f"Max difference between implementations: {diff.item():.6f}")
-        print(f"Results match: {diff.item() < 1e-5}\n")
+        diff_naive_ring = (result_naive - result_ring).abs().max()
+        diff_ring_pytorch = (result_ring - result_pytorch).abs().max()
+        diff_naive_pytorch = (result_naive - result_pytorch).abs().max()
+        
+        print("=== Verification: All methods should produce the same SUM ===")
+        print(f"Naive vs Ring difference: {diff_naive_ring.item():.6f}")
+        print(f"Ring vs PyTorch difference: {diff_ring_pytorch.item():.6f}")
+        print(f"Naive vs PyTorch difference: {diff_naive_pytorch.item():.6f}")
+        
+        # Use 1e-5 threshold for floating point precision
+        all_match = (diff_naive_ring.item() < 1e-5 and 
+                    diff_ring_pytorch.item() < 1e-5 and 
+                    diff_naive_pytorch.item() < 1e-5)
+        print(f"All results match: {all_match}\n")
     
     # Performance comparison
     if rank == 0:
