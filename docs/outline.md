@@ -43,6 +43,41 @@ Manually split the batch across two "GPUs" and average gradients.
 - **Concept:** Gradient hooks for automatic all-reduce during backward.
 - **Lab:** DDP with gradient hooks (more efficient than manual averaging).
 
+### Deep Dive: First Principles
+
+#### [All-Reduce Algorithms](./allreduce.md)
+
+- **Concept:** How all-reduce actually works under the hood.
+- **Naive All-Reduce:** O(n²) communication complexity (gather + broadcast).
+- **Ring All-Reduce:** O(n) communication complexity, optimal bandwidth usage.
+- **Lab:** Implement both algorithms from scratch and compare performance.
+
+#### [Gradient Hooks](./hooks.md)
+
+- **Concept:** How hooks enable automatic gradient synchronization.
+- **Execution Order:** Hooks called in reverse order (enables overlap!).
+- **Lab:** Track hook execution and measure computation/communication overlap.
+
+#### [Gradient Bucketing](./bucketing.md)
+
+- **Concept:** Group small gradients into buckets for efficiency.
+- **Why it matters:** Fewer messages, better bandwidth, enables overlap.
+- **Lab:** Implement bucketing and compare with unbucketed DDP.
+
+#### [Synchronization Primitives](./sync_primitives.md)
+
+- **Barriers:** Synchronize all ranks at a point.
+- **Broadcast:** Distribute data from one rank to all.
+- **Scatter/Gather:** Distribute/collect data across ranks.
+- **Lab:** Use primitives for model initialization and result collection.
+
+#### [Performance Analysis](./performance.md)
+
+- **Communication Overhead:** When is DDP worth it?
+- **Scaling Efficiency:** How well does DDP scale?
+- **Bottleneck Analysis:** Computation vs communication vs memory bound.
+- **Lab:** Profile DDP training and analyze bottlenecks.
+
 ---
 
 ## Library
@@ -51,6 +86,7 @@ Manually split the batch across two "GPUs" and average gradients.
 
 - **Initialization:** A wrapper around `dist.init_process_group()`.
 - **All-Reduce:** `all_reduce(tensor, op)` and `all_reduce_mean(tensor)` for gradient synchronization.
+- **Synchronization:** `barrier()`, `broadcast()`, `scatter()`, `gather()`, `all_gather()`.
 
 **2. `model.py` (The Subject)**
 
@@ -60,4 +96,31 @@ Manually split the batch across two "GPUs" and average gradients.
 
 - **Naive DP:** Manual gradient averaging after backward.
 - **DDP:** Gradient hooks for automatic synchronization during backward.
+- **Bucketing:** Optional bucketed hooks for better efficiency.
+
+**4. `allreduce.py` (First Principles)**
+
+- **AllReduceAlgorithms:** Educational implementations of all-reduce algorithms.
+- **naive_all_reduce():** O(n²) implementation for comparison.
+- **ring_all_reduce():** O(n) ring implementation.
+- **compare_all_reduce_algorithms():** Performance benchmarking.
+
+**5. `bucketing.py` (Optimization)**
+
+- **GradientBucket:** Groups parameters and their gradients.
+- **BucketedDDPHooks:** Manages buckets and registers hooks.
+- **compare_bucketed_vs_unbucketed():** Performance comparison.
+
+**6. `hooks_demo.py` (Demonstration)**
+
+- **HookTracker:** Tracks hook execution order.
+- **demonstrate_hook_order():** Shows reverse execution order.
+- **demonstrate_overlap():** Measures computation/communication overlap.
+
+**7. `performance.py` (Analysis)**
+
+- **DDPPerformanceAnalyzer:** Detailed timing breakdown.
+- **analyze_scaling_efficiency():** Scaling analysis.
+- **estimate_communication_time():** Communication estimation.
+- **communication_complexity_analysis():** Complexity comparison.
 
