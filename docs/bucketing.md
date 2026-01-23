@@ -86,11 +86,13 @@ Typical speedups from bucketing:
 
 The larger the model, the more benefit from bucketing!
 
-## Lab
+## Demo
 
-Compare bucketed vs unbucketed DDP performance.
+Run `examples/demo_bucketing.py` to see the performance improvement from bucketing. No user changes needed - the demo compares bucketed vs unbucketed gradient synchronization.
 
-See `my_work/step8_bucketing.py` - call `compare_bucketed_vs_unbucketed()` from `src/bucketing.py` to see the performance improvement.
+```bash
+torchrun --nproc-per-node=4 examples/demo_bucketing.py
+```
 
 ## Example
 

@@ -42,25 +42,23 @@
 - **Uses:** `comms.all_reduce_mean()` from step 4
 - **Implementation:** `src/schedule.py::naive_data_parallel_step`
 
-## 8. Gradient Hooks
-- **Doc:** [Gradient Hooks](./docs/hooks.md)
-- **Lab:** `my_work/step7_hooks.py`
-- **Example:** `examples/hooks.py`
-- **Concepts:** Hook execution order (reverse), computation/communication overlap
-- **Lab:** Call `compare_hook_vs_manual_timing()` function
-
-## 9. DistributedDataParallel (DDP)
+## 8. DistributedDataParallel (DDP)
 - **Doc:** [DDP](./docs/ddp.md)
 - **Lab:** `my_work/step6_ddp.py`
 - **Concepts:** Gradient hooks for automatic synchronization
-- **Uses:** Hooks from step 8
 - **Implementation:** `src/schedule.py::ddp_step`
 
-## 10. Gradient Bucketing
+## 9. Gradient Hooks (Demo)
+- **Doc:** [Gradient Hooks](./docs/hooks.md)
+- **Demo:** Run `examples/demo_hooks.py` (no user changes needed)
+- **Concepts:** Hook execution order (reverse), computation/communication overlap
+- **Shows:** `compare_hook_vs_manual_timing()` comparison
+
+## 10. Gradient Bucketing (Demo)
 - **Doc:** [Gradient Bucketing](./docs/bucketing.md)
-- **Lab:** `my_work/step8_bucketing.py`
+- **Demo:** Run `examples/demo_bucketing.py` (no user changes needed)
 - **Concepts:** Group gradients into buckets, fewer messages, better bandwidth
-- **Lab:** Call `compare_bucketed_vs_unbucketed()` function
+- **Shows:** `compare_bucketed_vs_unbucketed()` performance comparison
 - **Implementation:** `src/bucketing.py`
 
 ## 11. Synchronization Primitives

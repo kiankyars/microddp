@@ -33,20 +33,20 @@ Manually split the batch across two "GPUs" and average gradients.
 - **Concept:** Manual gradient averaging after backward pass.
 - **Lab:** Implement Naive Data Parallel. Forward on local chunk, backward, then all-reduce gradients using comms.
 
-#### [Gradient Hooks](./hooks.md)
-
-- **Concept:** How hooks enable automatic gradient synchronization.
-- **Lab:** Compare hook-based vs manual all-reduce timing.
-
 #### [DDP](./ddp.md)
 
 - **Concept:** DistributedDataParallel with gradient hooks for automatic all-reduce during backward.
-- **Lab:** DDP with gradient hooks (uses hooks from previous step).
+- **Lab:** DDP with gradient hooks.
+
+#### [Gradient Hooks](./hooks.md)
+
+- **Concept:** How hooks enable automatic gradient synchronization.
+- **Demo:** Run `examples/demo_hooks.py` to see hook vs manual timing comparison.
 
 #### [Gradient Bucketing](./bucketing.md)
 
 - **Concept:** Group small gradients into buckets for efficiency.
-- **Lab:** Compare bucketed vs unbucketed DDP performance.
+- **Demo:** Run `examples/demo_bucketing.py` to see performance improvement.
 
 #### [Synchronization Primitives](./sync_primitives.md)
 

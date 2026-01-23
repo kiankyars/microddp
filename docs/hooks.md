@@ -101,11 +101,13 @@ See `examples/hooks.py` for tools to:
 2. **Reverse execution order enables overlap** - communicate early, compute late
 3. **Bucketing amplifies benefits** - group hooks for efficiency
 
-## Lab
+## Demo
 
-Compare hook-based vs manual all-reduce timing.
+Run `examples/demo_hooks.py` to see the hook vs manual all-reduce timing comparison. No user changes needed - the demo shows how hooks enable computation/communication overlap.
 
-See `my_work/step7_hooks.py` - call `compare_hook_vs_manual_timing()` from `examples/hooks.py` to see the performance difference.
+```bash
+torchrun --nproc-per-node=4 examples/demo_hooks.py
+```
 
 ## Common Pitfalls
 
