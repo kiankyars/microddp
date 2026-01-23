@@ -111,15 +111,21 @@ def demonstrate_overlap(model: nn.Module, comms: DataParallelComms,
         if param.requires_grad:
             param.register_hook(make_hook_with_timing(name))
     
+    import torch.distributed as dist
+    
     # Forward pass
+    dist.barrier()
     start_forward = time.time()
     loss = model(input_chunk, target_chunk)
     end_forward = time.time()
+    dist.barrier()
     
     # Backward pass (hooks called here)
+    dist.barrier()
     start_backward = time.time()
     loss.backward()
     end_backward = time.time()
+    dist.barrier()
     
     # Analyze overlap
     print("=== Computation/Communication Overlap Analysis ===\n")
@@ -152,11 +158,13 @@ def compare_hook_vs_manual_timing(model, comms, input_chunk, target_chunk, devic
     """
     import time
     
+    import torch.distributed as dist
+    
     # Method 1: Manual all-reduce (after backward)
     model1 = type(model)(model.net[0].in_features, len(model.net) // 2).to(device)
     optimizer1 = torch.optim.Adam(model1.parameters())
     
-    comms.barrier()
+    dist.barrier()
     start1 = time.time()
     
     loss1 = model1(input_chunk, target_chunk)
@@ -168,7 +176,7 @@ def compare_hook_vs_manual_timing(model, comms, input_chunk, target_chunk, devic
             comms.all_reduce_mean(param.grad)
     
     optimizer1.step()
-    comms.barrier()
+    dist.barrier()
     manual_time = time.time() - start1
     
     # Method 2: Hook-based (potential overlap)
@@ -186,14 +194,14 @@ def compare_hook_vs_manual_timing(model, comms, input_chunk, target_chunk, devic
                 return hook
             param.register_hook(make_hook())
     
-    comms.barrier()
+    dist.barrier()
     start2 = time.time()
     
     loss2 = model2(input_chunk, target_chunk)
     loss2.backward()  # Hooks called during backward
     optimizer2.step()
     
-    comms.barrier()
+    dist.barrier()
     hook_time = time.time() - start2
     
     if comms.rank == 0:

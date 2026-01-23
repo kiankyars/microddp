@@ -40,7 +40,7 @@ class GradientBucket:
         flat_grads = torch.cat([g.flatten() for g in self.gradients])
         
         # All-reduce the concatenated tensor
-        comms.all_reduce(flat_grads, op=op)
+        dist.all_reduce(flat_grads, op=op)
         
         # Split back and update original gradients
         offset = 0

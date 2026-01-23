@@ -60,6 +60,29 @@ else:
 comms.broadcast(model_state, src=0)
 ```
 
+### How Broadcast Works: Divide-and-Conquer (O(log n))
+
+Broadcast uses a divide-and-conquer strategy to achieve O(log n) time complexity:
+
+**Algorithm (Binary Tree):**
+1. Rank 0 (root) sends to rank 1
+2. Ranks 0-1 send to ranks 2-3
+3. Ranks 0-3 send to ranks 4-7
+4. Continue until all ranks have the data
+
+**Example with 8 ranks:**
+```
+Step 1: 0 → 1
+Step 2: 0 → 2, 1 → 3
+Step 3: 0 → 4, 1 → 5, 2 → 6, 3 → 7
+```
+
+**Time Complexity:** O(log n) steps where n is world size
+- Naive approach (0 sends to each rank): O(n) steps
+- Divide-and-conquer: O(log n) steps
+
+**Why it's efficient:** Each step doubles the number of ranks with the data, so we need log₂(n) steps to reach all n ranks.
+
 ## Scatter
 
 **What it does:** Distribute different chunks of data to each rank.
@@ -128,6 +151,52 @@ else:
     comms.gather(torch.tensor([local_loss]), dst=0)
 ```
 
+## Reduce
+
+**What it does:** Combine tensors from all ranks using an operation (sum, max, min) and store result on one rank.
+
+```python
+# Each rank has a tensor, rank 0 gets the sum
+my_tensor = torch.randn(10)
+
+if rank == 0:
+    result = torch.zeros(10)
+    comms.reduce(my_tensor, dst=0, op=dist.ReduceOp.SUM)
+    # result now contains sum of all tensors
+else:
+    comms.reduce(my_tensor, dst=0, op=dist.ReduceOp.SUM)
+```
+
+**Use cases:**
+- Sum metrics across all ranks
+- Find maximum/minimum values across ranks
+- Aggregate before all-reduce (reduce is one-way, all-reduce is two-way)
+
+### How Reduce Works: Divide-and-Conquer (O(log n))
+
+Reduce uses the same divide-and-conquer strategy as broadcast, but in reverse:
+
+**Algorithm (Binary Tree, bottom-up):**
+1. Ranks 0-1 reduce to rank 0
+2. Ranks 2-3 reduce to rank 2, then rank 2 sends to rank 0
+3. Ranks 4-7 reduce to rank 4, then rank 4 sends to rank 0
+4. Continue until all data is reduced to rank 0
+
+**Example with 8 ranks (sum operation):**
+```
+Step 1: 1 → 0 (sum), 3 → 2 (sum), 5 → 4 (sum), 7 → 6 (sum)
+Step 2: 2 → 0 (sum), 6 → 4 (sum)
+Step 3: 4 → 0 (sum)
+```
+
+**Time Complexity:** O(log n) steps where n is world size
+- Naive approach (each rank sends to 0): O(n) steps
+- Divide-and-conquer: O(log n) steps
+
+**Why it's efficient:** Each step halves the number of ranks that need to send data, so we need log₂(n) steps to reduce everything to rank 0.
+
+**Note:** All-reduce is essentially reduce + broadcast, so it also uses divide-and-conquer and achieves O(log n) complexity (though ring all-reduce is often preferred for bandwidth efficiency).
+
 ## All-Gather
 
 **What it does:** Collect tensors from all ranks to all ranks.
@@ -161,6 +230,7 @@ global_mean = torch.stack(all_means).mean()
 |-----------|---------------|----------|
 | All-Reduce | All → All (sum) | Gradient synchronization |
 | Broadcast | One → All | Model initialization |
+| Reduce | All → One (sum/max/min) | Metric aggregation |
 | Scatter | One → All (different) | Data distribution |
 | Gather | All → One | Result collection |
 | All-Gather | All → All (collect) | Shared statistics |
@@ -171,6 +241,7 @@ global_mean = torch.stack(all_means).mean()
 See `src/comms.py` for implementations of all primitives:
 - `barrier()`: Synchronization
 - `broadcast()`: One-to-all
+- `reduce()`: All-to-one (with reduction operation)
 - `scatter()`: One-to-all (different data)
 - `gather()`: All-to-one
 - `all_gather()`: All-to-all (collection)

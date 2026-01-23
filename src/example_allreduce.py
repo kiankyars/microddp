@@ -29,16 +29,16 @@ def main():
     algorithms = AllReduceAlgorithms(rank, world_size)
     
     # Test ring all-reduce
-    comms.barrier()
+    dist.barrier()
     result_ring = algorithms.ring_all_reduce_simple(tensor.clone())
-    comms.barrier()
+    dist.barrier()
     
     # Test PyTorch's optimized all-reduce
     result_pytorch = tensor.clone()
-    comms.barrier()
+    dist.barrier()
     dist.all_reduce(result_pytorch, op=dist.ReduceOp.SUM)
     result_pytorch.div_(world_size)  # Average
-    comms.barrier()
+    dist.barrier()
     
     # Verify results are similar
     if rank == 0:

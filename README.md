@@ -52,7 +52,7 @@ See [kiankyars.github.io/microddp/](https://kiankyars.github.io/microddp/) for d
 │   ├── step1_manual.py
 │   ├── step2_comms.py
 │   ├── step3_allreduce.py
-│   ├── step4_model.py
+│   ├── step4_ring_allreduce.py
 │   ├── step5_main.py
 │   └── step6_ddp.py
 ├── pyproject.toml

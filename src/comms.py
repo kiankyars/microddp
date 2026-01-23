@@ -19,8 +19,6 @@ def init_distributed():
         device = torch.device(f"cuda:{local_rank}")
     elif torch.backends.mps.is_available():
         device = torch.device("cpu")
-    elif torch.cpu.is_available():
-        device = torch.device("cpu")
     else:
         exit()
 
@@ -38,24 +36,16 @@ def init_distributed():
 class DataParallelComms:
     """
     Communication primitives for Data Parallelism.
-    Main operation: all-reduce for gradient synchronization.
+    Provides convenience wrappers that add value beyond PyTorch's dist primitives.
     
-    Additional primitives:
-    - Barriers: Synchronize all ranks at a point
-    - Broadcast: Distribute data from one rank to all others
-    - Scatter/Gather: Distribute/collect data across ranks
+    Note: For simple wrappers (barrier, broadcast, reduce, all_reduce), use
+    torch.distributed directly. This class only includes functions that add
+    meaningful logic (like all_reduce_mean, scatter, gather with defaults).
     """
 
     def __init__(self, rank, world_size):
         self.rank = rank
         self.world_size = world_size
-
-    def all_reduce(self, tensor, op=dist.ReduceOp.SUM):
-        """
-        All-reduce operation: sum gradients across all ranks.
-        Result is stored in-place in the input tensor.
-        """
-        dist.all_reduce(tensor, op=op)
 
     def all_reduce_mean(self, tensor):
         """
@@ -64,32 +54,6 @@ class DataParallelComms:
         """
         dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
         tensor.div_(self.world_size)
-
-    def barrier(self):
-        """
-        Barrier synchronization: all ranks wait here until everyone arrives.
-        
-        Use cases:
-        - Ensure all ranks finish computation before proceeding
-        - Synchronize before timing measurements
-        - Coordinate checkpoint saving/loading
-        """
-        dist.barrier()
-
-    def broadcast(self, tensor, src=0):
-        """
-        Broadcast: send tensor from src rank to all other ranks.
-        
-        Use cases:
-        - Initialize model weights from rank 0
-        - Distribute hyperparameters
-        - Share random seeds for reproducibility
-        
-        Args:
-            tensor: Tensor to broadcast (in-place operation)
-            src: Source rank (default: 0)
-        """
-        dist.broadcast(tensor, src=src)
 
     def scatter(self, scatter_list, src=0):
         """

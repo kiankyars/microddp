@@ -48,7 +48,6 @@ class AllReduceAlgorithms:
         else:
             # Other ranks send to rank 0
             dist.send(tensor, dst=0)
-            result.zero_()  # Will be overwritten by broadcast
         
         # Phase 2: Broadcast from rank 0
         dist.broadcast(result, src=0)

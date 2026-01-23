@@ -2,7 +2,7 @@
 
 ## The Problem
 
-In naive data parallelism, we all-reduce each gradient separately:
+In [naive data parallelism](./naive.md), we all-reduce each gradient separately:
 
 ```python
 for param in model.parameters():

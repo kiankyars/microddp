@@ -39,34 +39,34 @@ class DDPPerformanceAnalyzer:
             Dict with timing breakdown
         """
         # Forward pass
-        self.comms.barrier()
+        dist.barrier()
         start = time.time()
         loss = model(input_chunk, target_chunk)
-        self.comms.barrier()
+        dist.barrier()
         forward_time = time.time() - start
         
         # Backward pass
-        self.comms.barrier()
+        dist.barrier()
         start = time.time()
         loss.backward()
-        self.comms.barrier()
+        dist.barrier()
         backward_time = time.time() - start
         
         # Communication (if not using hooks/bucketing)
-        self.comms.barrier()
+        dist.barrier()
         start = time.time()
         if not use_bucketing:
             for param in model.parameters():
                 if param.grad is not None:
                     self.comms.all_reduce_mean(param.grad)
-        self.comms.barrier()
+        dist.barrier()
         comm_time = time.time() - start
         
         # Optimizer step
-        self.comms.barrier()
+        dist.barrier()
         start = time.time()
         optimizer.step()
-        self.comms.barrier()
+        dist.barrier()
         optimizer_time = time.time() - start
         
         total_time = forward_time + backward_time + comm_time + optimizer_time
