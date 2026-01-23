@@ -43,8 +43,6 @@ Manually split the batch across two "GPUs" and average gradients.
 - **Concept:** Gradient hooks for automatic all-reduce during backward.
 - **Lab:** DDP with gradient hooks (more efficient than manual averaging).
 
-### Deep Dive: First Principles
-
 #### [All-Reduce Algorithms](./allreduce.md)
 
 - **Concept:** How all-reduce actually works under the hood.
