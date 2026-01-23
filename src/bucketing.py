@@ -199,6 +199,10 @@ def compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, devi
 
 
 if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    
     import torch.optim as optim
     from src.comms import init_distributed, DataParallelComms
     from src.model import FullMLP

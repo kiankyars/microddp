@@ -5,6 +5,10 @@ This module shows how gradient hooks work in DDP and why they enable
 overlap between computation and communication.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import torch
 import torch.nn as nn
 import torch.distributed as dist
