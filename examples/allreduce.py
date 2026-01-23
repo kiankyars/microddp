@@ -64,7 +64,8 @@ class AllReduceAlgorithms:
         
         This is less bandwidth-efficient but easier to understand.
         
-        Note: Uses blocking operations with proper send/receive ordering to avoid deadlock.
+        Note: For full-tensor ring all-reduce, after scatter-reduce all ranks
+        already have the complete sum, so all-gather phase is skipped.
         """
         result = tensor.clone()
         
@@ -92,29 +93,9 @@ class AllReduceAlgorithms:
         
         # Phase 2: All-Gather
         # For full-tensor ring all-reduce, after scatter-reduce all ranks already have
-        # the complete sum. The all-gather phase is technically unnecessary but we include
-        # it to show the complete algorithm pattern (needed for chunked ring all-reduce).
-        # Since all ranks already have the sum, we just pass it around without overwriting.
-        for step in range(self.world_size - 1):
-            send_to = (self.rank + 1) % self.world_size
-            recv_from = (self.rank - 1) % self.world_size
-            
-            # Use blocking operations with proper ordering
-            if self.rank % 2 == 0:
-                # Even ranks: send then receive
-                dist.send(result, dst=send_to)
-                recv_tensor = torch.zeros_like(result)
-                dist.recv(recv_tensor, src=recv_from)
-            else:
-                # Odd ranks: receive then send
-                recv_tensor = torch.zeros_like(result)
-                dist.recv(recv_tensor, src=recv_from)
-                dist.send(result, dst=send_to)
-            
-            # For full-tensor: all ranks already have the sum, so recv_tensor should equal result
-            # We verify this but don't overwrite (since we already have the correct result)
-            # In chunked ring all-reduce, we would update result here
-            # For now, we keep result as-is since all ranks already have the complete sum
+        # the complete sum, so all-gather is not needed. We skip it.
+        # (All-gather is only needed for chunked ring all-reduce where each rank has
+        #  a different chunk of the final result after scatter-reduce)
         
         return result
 
