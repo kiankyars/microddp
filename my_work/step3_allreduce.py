@@ -1,27 +1,43 @@
+import os
 import torch
 import torch.distributed as dist
 
-# TODO: Test all-reduce operation
-# This exercise helps you understand how all-reduce works
+from src.comms import DataParallelComms, init_distributed
 
-# Simulate all-reduce manually (without actual distributed setup)
-# Create tensors on different "ranks" and manually compute the result
+# TODO: Initialize distributed environment
+rank, world_size, device = None, None, None  # TODO: init_distributed()
+comms = None  # TODO: DataParallelComms(rank, world_size)
 
-# Rank 0 tensor
-tensor0 = torch.tensor([1.0, 2.0, 3.0])
+# Each rank starts with different data
+# Rank 0: [1.0, 2.0, 3.0]
+# Rank 1: [4.0, 5.0, 6.0]
+# Rank 2: [7.0, 8.0, 9.0]
+# After all-reduce_mean: all ranks should have the average
 
-# Rank 1 tensor
-tensor1 = torch.tensor([4.0, 5.0, 6.0])
+initial_value = rank * 3 + 1 if rank is not None else 0
+tensor = torch.tensor([float(initial_value), float(initial_value + 1), float(initial_value + 2)], 
+                     device=device if device else "cpu")
 
-# Rank 2 tensor
-tensor2 = torch.tensor([7.0, 8.0, 9.0])
+if rank == 0:
+    print(f"=== All-Reduce Test (World Size: {world_size}) ===\n")
+    print("Initial tensors:")
 
-# TODO: What is the result of all-reduce SUM?
-# result = ?
+# TODO: Print initial tensor for each rank
+# dist.barrier()
+# print(f"Rank {rank}: {tensor.cpu().tolist()}")
+# dist.barrier()
 
-# TODO: What is the result of all-reduce MEAN (sum then divide by world_size)?
-# result_mean = ?
+# TODO: Use comms.all_reduce_mean() to average the tensor across all ranks
+# comms.all_reduce_mean(tensor)
 
-print("All-reduce SUM result:", None)  # TODO
-print("All-reduce MEAN result:", None)  # TODO
+if rank == 0:
+    print("\nAfter all-reduce_mean:")
+
+# TODO: Print result and verify all ranks have the same averaged tensor
+# dist.barrier()
+# print(f"Rank {rank}: {tensor.cpu().tolist()}")
+# dist.barrier()
+
+# TODO: Clean up
+# dist.destroy_process_group()
 

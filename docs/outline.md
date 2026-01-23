@@ -19,48 +19,34 @@ Manually split the batch across two "GPUs" and average gradients.
 - **The Exercise:** Try to train by manually averaging gradients from two model copies.
 - **The Lesson:** You have to manually synchronize gradients; autograd computes them locally.
 
-### Distributed Basics
-
-- **Concept:** Rank, World Size, and Process Group.
-  - **The Process Group:** Imagine a conference call. Before anyone can talk, they must dial in. `init_process_group` is dialing in.
-  - **World Size:** The total number of people on the call (e.g., 4 GPUs).
-  - **Rank:** Your unique ID badge (0, 1, 2, 3).
-  - **Rank 0** is the "Boss" (usually handles logging, saving checkpoints, and data loading).
-- **Concept:** What torchrun does.
-  - **Process Isolation:** `torchrun` spawns completely separate Python interpreter instances. Each has its own memory space.
-  - **True Parallelism:** Because these are separate processes (not threads), the OS schedules them across different physical CPU cores or GPUs.
-  - **The Network Bridge:** When you call `dist.all_reduce`, the data is synchronized across all processes.
-
 ### Data Parallelism
-
-#### [Naive DP](./naive.md)
-
-- **Concept:** Manual gradient averaging after backward pass.
-- **Lab:** Implement Naive Data Parallel. Forward on local chunk, backward, then all-reduce gradients.
-
-#### [DDP](./ddp.md)
-
-- **Concept:** Gradient hooks for automatic all-reduce during backward.
-- **Lab:** DDP with gradient hooks (more efficient than manual averaging).
 
 #### [All-Reduce Algorithms](./allreduce.md)
 
 - **Concept:** How all-reduce actually works under the hood.
 - **Naive All-Reduce:** O(n²) communication complexity (gather + broadcast).
 - **Ring All-Reduce:** O(n) communication complexity, optimal bandwidth usage.
-- **Lab:** Implement both algorithms from scratch and compare performance.
+- **Lab:** Implement ring all-reduce algorithm from scratch.
+
+#### [Naive DP](./naive.md)
+
+- **Concept:** Manual gradient averaging after backward pass.
+- **Lab:** Implement Naive Data Parallel. Forward on local chunk, backward, then all-reduce gradients using comms.
 
 #### [Gradient Hooks](./hooks.md)
 
 - **Concept:** How hooks enable automatic gradient synchronization.
-- **Execution Order:** Hooks called in reverse order (enables overlap!).
-- **Lab:** Track hook execution and measure computation/communication overlap.
+- **Lab:** Compare hook-based vs manual all-reduce timing.
+
+#### [DDP](./ddp.md)
+
+- **Concept:** DistributedDataParallel with gradient hooks for automatic all-reduce during backward.
+- **Lab:** DDP with gradient hooks (uses hooks from previous step).
 
 #### [Gradient Bucketing](./bucketing.md)
 
 - **Concept:** Group small gradients into buckets for efficiency.
-- **Why it matters:** Fewer messages, better bandwidth, enables overlap.
-- **Lab:** Implement bucketing and compare with unbucketed DDP.
+- **Lab:** Compare bucketed vs unbucketed DDP performance.
 
 #### [Synchronization Primitives](./sync_primitives.md)
 
@@ -80,23 +66,23 @@ Manually split the batch across two "GPUs" and average gradients.
 
 ## Library
 
-**1. `comms.py` (The Glue)**
+**1. `comms.py`**
 
 - **Initialization:** A wrapper around `dist.init_process_group()`.
-- **All-Reduce:** `all_reduce(tensor, op)` and `all_reduce_mean(tensor)` for gradient synchronization.
-- **Synchronization:** `barrier()`, `broadcast()`, `scatter()`, `gather()`, `all_gather()`.
+- **All-Reduce:** `all_reduce_mean(tensor)` for gradient synchronization.
+- **Synchronization:** `scatter()`, `gather()`, `all_gather()`.
 
-**2. `model.py` (The Subject)**
+**2. `model.py`**
 
 - **FullMLP:** A class `FullMLP(nn.Module)` with 16 `Linear` layers. Replicated on each rank.
 
-**3. `schedule.py` (The Engine)**
+**3. `schedule.py`**
 
 - **Naive DP:** Manual gradient averaging after backward.
 - **DDP:** Gradient hooks for automatic synchronization during backward.
 - **Bucketing:** Optional bucketed hooks for better efficiency.
 
-**4. `bucketing.py` (Optimization)**
+**4. `bucketing.py`**
 
 - **GradientBucket:** Groups parameters and their gradients.
 - **BucketedDDPHooks:** Manages buckets and registers hooks.

@@ -101,6 +101,12 @@ See `examples/hooks.py` for tools to:
 2. **Reverse execution order enables overlap** - communicate early, compute late
 3. **Bucketing amplifies benefits** - group hooks for efficiency
 
+## Lab
+
+Compare hook-based vs manual all-reduce timing.
+
+See `my_work/step7_hooks.py` - call `compare_hook_vs_manual_timing()` from `examples/hooks.py` to see the performance difference.
+
 ## Common Pitfalls
 
 ### Closure Issues

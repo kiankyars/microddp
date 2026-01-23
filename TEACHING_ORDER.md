@@ -21,11 +21,13 @@
 - **Doc:** [Outline - Distributed Basics](./docs/outline.md#distributed-basics)
 - **Lab:** `my_work/step2_comms.py`
 - **Concepts:** Rank, World Size, Process Group, torchrun
+- **Implementation:** `init_distributed()`, `DataParallelComms` with `all_reduce_mean()`
 
 ## 5. All-Reduce Introduction
 - **Doc:** [Naive DP](./docs/naive.md)
 - **Lab:** `my_work/step3_allreduce.py`
 - **Concept:** What all-reduce does (sum/average across ranks)
+- **Uses:** `comms.all_reduce_mean()` from step 4
 
 ## 6. Ring All-Reduce Algorithm
 - **Doc:** [All-Reduce Algorithms](./docs/allreduce.md)
@@ -37,22 +39,28 @@
 - **Doc:** [Naive DP](./docs/naive.md)
 - **Lab:** `my_work/step5_main.py`
 - **Concepts:** Manual gradient averaging, all-reduce each gradient separately
+- **Uses:** `comms.all_reduce_mean()` from step 4
 - **Implementation:** `src/schedule.py::naive_data_parallel_step`
 
-## 8. DistributedDataParallel (DDP)
-- **Doc:** [DDP](./docs/ddp.md)
-- **Lab:** `my_work/step6_ddp.py`
-- **Concepts:** Gradient hooks, automatic synchronization
-- **Implementation:** `src/schedule.py::ddp_step`
-
-## 9. Gradient Hooks Deep Dive
+## 8. Gradient Hooks
 - **Doc:** [Gradient Hooks](./docs/hooks.md)
+- **Lab:** `my_work/step7_hooks.py`
 - **Example:** `examples/hooks.py`
 - **Concepts:** Hook execution order (reverse), computation/communication overlap
+- **Lab:** Call `compare_hook_vs_manual_timing()` function
+
+## 9. DistributedDataParallel (DDP)
+- **Doc:** [DDP](./docs/ddp.md)
+- **Lab:** `my_work/step6_ddp.py`
+- **Concepts:** Gradient hooks for automatic synchronization
+- **Uses:** Hooks from step 8
+- **Implementation:** `src/schedule.py::ddp_step`
 
 ## 10. Gradient Bucketing
 - **Doc:** [Gradient Bucketing](./docs/bucketing.md)
+- **Lab:** `my_work/step8_bucketing.py`
 - **Concepts:** Group gradients into buckets, fewer messages, better bandwidth
+- **Lab:** Call `compare_bucketed_vs_unbucketed()` function
 - **Implementation:** `src/bucketing.py`
 
 ## 11. Synchronization Primitives

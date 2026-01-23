@@ -1,5 +1,6 @@
 - [Principles](./principles.md)
 - [Outline](./outline.md)
+- [Distributed Basics](./basics.md)
 - [Naive DP](./naive.md)
 - [DDP](./ddp.md)
 - [All-Reduce Algorithms](./allreduce.md)

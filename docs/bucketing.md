@@ -86,10 +86,16 @@ Typical speedups from bucketing:
 
 The larger the model, the more benefit from bucketing!
 
+## Lab
+
+Compare bucketed vs unbucketed DDP performance.
+
+See `my_work/step8_bucketing.py` - call `compare_bucketed_vs_unbucketed()` from `src/bucketing.py` to see the performance improvement.
+
 ## Example
 
 ```python
-from bucketing import BucketedDDPHooks
+from src.bucketing import BucketedDDPHooks
 
 # Register bucketed hooks
 bucketed_hooks = BucketedDDPHooks(model, comms, bucket_size_mb=25.0)
