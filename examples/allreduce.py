@@ -64,13 +64,16 @@ class AllReduceAlgorithms:
         
         This is less bandwidth-efficient but easier to understand.
         
-        Note: For full-tensor ring all-reduce, after scatter-reduce all ranks
-        already have the complete sum, so all-gather phase is skipped.
+        Algorithm: For full-tensor, we need to ensure each rank receives
+        the original data from each other rank exactly once. We do this by
+        having each rank send its original data (not accumulated) in each step.
         """
         result = tensor.clone()
+        original = tensor.clone()  # Keep original to send in each step
         
         # Phase 1: Scatter-Reduce
-        # After (world_size - 1) steps, each rank will have accumulated data from all ranks
+        # Each rank sends its original data around the ring
+        # After (world_size - 1) steps, each rank will have received data from all other ranks
         for step in range(self.world_size - 1):
             send_to = (self.rank + 1) % self.world_size
             recv_from = (self.rank - 1) % self.world_size
@@ -79,23 +82,21 @@ class AllReduceAlgorithms:
             # Even ranks send first, odd ranks receive first
             if self.rank % 2 == 0:
                 # Even ranks: send then receive
-                dist.send(result, dst=send_to)
+                dist.send(original, dst=send_to)  # Send original, not accumulated
                 recv_tensor = torch.zeros_like(result)
                 dist.recv(recv_tensor, src=recv_from)
             else:
                 # Odd ranks: receive then send
                 recv_tensor = torch.zeros_like(result)
                 dist.recv(recv_tensor, src=recv_from)
-                dist.send(result, dst=send_to)
+                dist.send(original, dst=send_to)  # Send original, not accumulated
             
             # Accumulate received data (SUM operation)
             result += recv_tensor
-        
-        # Phase 2: All-Gather
-        # For full-tensor ring all-reduce, after scatter-reduce all ranks already have
-        # the complete sum, so all-gather is not needed. We skip it.
-        # (All-gather is only needed for chunked ring all-reduce where each rank has
-        #  a different chunk of the final result after scatter-reduce)
+            
+            # Rotate: the data we received becomes the original we'll send next
+            # (This simulates the ring movement)
+            original = recv_tensor.clone()
         
         return result
 
