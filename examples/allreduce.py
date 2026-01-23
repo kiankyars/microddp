@@ -204,10 +204,6 @@ class AllReduceAlgorithms:
             
             result = recv_tensor.clone()
         
-        # Note: PyTorch doesn't have ReduceOp.MEAN
-        # To get mean, call with SUM and divide by world_size yourself
-        # or use all_reduce_mean() wrapper
-        
         return result
 
 

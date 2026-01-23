@@ -157,13 +157,23 @@ class BucketedDDPHooks:
 def compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, device):
     """
     Compare performance of bucketed vs unbucketed gradient synchronization.
+    
+    Note: For small models, bucketing overhead may outweigh benefits.
+    Bucketing helps most with large models (>100M parameters) where you have
+    many small gradients that benefit from grouping.
     """
     import time
+    import torch.distributed as dist
+    
+    # Use the same model for both tests
+    model_dim = model.net[0].in_features
+    model_depth = (len(model.net) - 1) // 2  # Account for ReLU layers and final layer
     
     # Test unbucketed (one all-reduce per parameter)
-    model_copy1 = type(model)(model.net[0].in_features, len(model.net) // 2).to(device)
+    model_copy1 = type(model)(model_dim, model_depth).to(device)
     optimizer1 = torch.optim.Adam(model_copy1.parameters())
     
+    dist.barrier()
     start = time.time()
     for _ in range(10):
         optimizer1.zero_grad()
@@ -174,26 +184,34 @@ def compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, devi
             if param.grad is not None:
                 comms.all_reduce_mean(param.grad)
         optimizer1.step()
+    dist.barrier()
     unbucketed_time = time.time() - start
     
     # Test bucketed
-    model_copy2 = type(model)(model.net[0].in_features, len(model.net) // 2).to(device)
+    model_copy2 = type(model)(model_dim, model_depth).to(device)
     optimizer2 = torch.optim.Adam(model_copy2.parameters())
     bucketed_hooks = BucketedDDPHooks(model_copy2, comms, bucket_size_mb=25.0)
     
+    dist.barrier()
     start = time.time()
     for _ in range(10):
         optimizer2.zero_grad()
         loss = model_copy2(input_chunk, target_chunk)
         loss.backward()
         optimizer2.step()
+    dist.barrier()
     bucketed_time = time.time() - start
     
     if comms.rank == 0:
         print(f"\n=== Bucketing Performance Comparison ===")
+        print(f"Model: {model_dim} dim, {model_depth} layers")
         print(f"Unbucketed time: {unbucketed_time*1000:.2f} ms")
         print(f"Bucketed time: {bucketed_time*1000:.2f} ms")
-        print(f"Speedup: {unbucketed_time/bucketed_time:.2f}x")
+        speedup = unbucketed_time / bucketed_time
+        print(f"Speedup: {speedup:.2f}x")
+        if speedup < 1.0:
+            print("\nNote: Bucketing is slower for small models due to overhead.")
+            print("Bucketing helps most with large models (>100M parameters).")
     
     return unbucketed_time, bucketed_time
 
