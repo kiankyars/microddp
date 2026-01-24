@@ -69,8 +69,7 @@ Manually split the batch across two "GPUs" and average gradients.
 **1. `comms.py`**
 
 - **Initialization:** A wrapper around `dist.init_process_group()`.
-- **All-Reduce:** `all_reduce_mean(tensor)` for gradient synchronization.
-- **Synchronization:** `scatter()`, `gather()`, `all_gather()`.
+- **All-Reduce:** `all_reduce_mean(tensor)` implemented from first principles using reduce + broadcast.
 
 **2. `model.py`**
 

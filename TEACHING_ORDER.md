@@ -18,10 +18,8 @@
 - **Lesson:** Must manually synchronize gradients
 
 ## 4. Distributed Basics
-- **Doc:** [Outline - Distributed Basics](./docs/outline.md#distributed-basics)
 - **Lab:** `my_work/step2_comms.py`
-- **Concepts:** Rank, World Size, Process Group, torchrun
-- **Implementation:** `init_distributed()`, `DataParallelComms` with `all_reduce_mean()`
+- **Implementation:** `init_distributed()` and `DataParallelComms`
 
 ## 5. All-Reduce Introduction
 - **Doc:** [Naive DP](./docs/naive.md)

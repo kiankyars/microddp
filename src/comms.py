@@ -36,11 +36,7 @@ def init_distributed():
 class DataParallelComms:
     """
     Communication primitives for Data Parallelism.
-    Provides convenience wrappers that add value beyond PyTorch's dist primitives.
-    
-    Note: For simple wrappers (barrier, broadcast, reduce, all_reduce), use
-    torch.distributed directly. This class only includes functions that add
-    meaningful logic (like all_reduce_mean, scatter, gather with defaults).
+    Implements all-reduce from first principles using reduce + broadcast.
     """
 
     def __init__(self, rank, world_size):
@@ -49,81 +45,21 @@ class DataParallelComms:
 
     def all_reduce_mean(self, tensor):
         """
-        All-reduce with averaging (sum then divide by world_size).
-        This is what we need for gradient averaging in DP.
+        All-reduce with averaging implemented from first principles.
+        
+        Algorithm:
+        1. Reduce: Sum all tensors to rank 0 (using reduce)
+        2. Broadcast: Distribute the sum from rank 0 to all ranks (using broadcast)
+        3. Average: Divide by world_size to get the mean
+        
+        This demonstrates that all-reduce = reduce + broadcast.
         """
-        dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+        # Step 1: Reduce all tensors to rank 0 (sum operation)
+        dist.reduce(tensor, dst=0, op=dist.ReduceOp.SUM)
+        
+        # Step 2: Broadcast the sum from rank 0 to all ranks
+        dist.broadcast(tensor, src=0)
+        
+        # Step 3: Average by dividing by world_size
         tensor.div_(self.world_size)
-
-    def scatter(self, scatter_list, src=0):
-        """
-        Scatter: distribute a list of tensors from src to all ranks.
-        
-        Each rank receives scatter_list[rank] from the source.
-        
-        Use cases:
-        - Distribute different data chunks to each rank
-        - Split a large dataset across ranks
-        
-        Args:
-            scatter_list: List of tensors (only used on src rank)
-            src: Source rank (default: 0)
-        
-        Returns:
-            Tensor received by this rank
-        """
-        if self.rank == src:
-            assert len(scatter_list) == self.world_size, \
-                f"scatter_list must have {self.world_size} tensors"
-            dist.scatter(scatter_list[self.rank], scatter_list, src=src)
-            return scatter_list[self.rank]
-        else:
-            output = torch.zeros_like(scatter_list[0]) if src == 0 else None
-            dist.scatter(output, src=src)
-            return output
-
-    def gather(self, tensor, gather_list=None, dst=0):
-        """
-        Gather: collect tensors from all ranks to dst rank.
-        
-        Use cases:
-        - Collect results from all ranks to rank 0 for logging
-        - Aggregate metrics across ranks
-        
-        Args:
-            tensor: Tensor to send from this rank
-            gather_list: List to store gathered tensors (only used on dst)
-            dst: Destination rank (default: 0)
-        
-        Returns:
-            gather_list if rank == dst, None otherwise
-        """
-        if self.rank == dst:
-            if gather_list is None:
-                gather_list = [torch.zeros_like(tensor) for _ in range(self.world_size)]
-            dist.gather(tensor, gather_list, dst=dst)
-            return gather_list
-        else:
-            dist.gather(tensor, dst=dst)
-            return None
-
-    def all_gather(self, tensor):
-        """
-        All-Gather: collect tensors from all ranks to all ranks.
-        
-        Unlike gather(), all ranks receive the result.
-        
-        Use cases:
-        - Collecting metrics that all ranks need
-        - Sharing local batch statistics
-        
-        Args:
-            tensor: Tensor to send from this rank
-        
-        Returns:
-            List of tensors from all ranks
-        """
-        gather_list = [torch.zeros_like(tensor) for _ in range(self.world_size)]
-        dist.all_gather(gather_list, tensor)
-        return gather_list
 

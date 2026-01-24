@@ -74,7 +74,7 @@ for step in range(STEPS):
     # Average gradients across models
     with torch.no_grad():
         for p1, p2 in zip(model1.parameters(), model2.parameters()):
-            avg_grad = (p1.grad + p2.grad) / 2.0
+            avg_grad = (p1.grad + p2.grad) / 2
             p1.grad.copy_(avg_grad)
             p2.grad.copy_(avg_grad)
 
