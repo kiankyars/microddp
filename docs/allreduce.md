@@ -84,7 +84,7 @@ Step 3: Final step - each rank has accumulated a chunk
 
 See `examples/allreduce.py` for educational implementations:
 - `naive_all_reduce()`: O(n²) implementation
-- `ring_all_reduce_simple()`: O(n) ring implementation
+- `ring_all_reduce()`: O(n) ring implementation
 - `ring_all_reduce()`: Optimized chunked version
 
 ## When to Use What

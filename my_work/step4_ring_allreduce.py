@@ -32,7 +32,7 @@ def init_distributed():
     return rank, world_size, device
 
 
-def ring_all_reduce_simple(tensor, rank, world_size, op=dist.ReduceOp.SUM):
+def ring_all_reduce(tensor, rank, world_size, op=dist.ReduceOp.SUM):
     """
     Simplified Ring All-Reduce for educational purposes.
     
@@ -85,7 +85,7 @@ def main():
     dist.barrier()
     
     # TODO: Perform ring all-reduce and verify all ranks get the same result
-    result = ring_all_reduce_simple(tensor, rank, world_size, op=dist.ReduceOp.SUM)
+    result = ring_all_reduce(tensor, rank, world_size, op=dist.ReduceOp.SUM)
     
     if rank == 0:
         print("\nAfter ring all-reduce (SUM):")

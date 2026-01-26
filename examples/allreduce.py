@@ -57,7 +57,7 @@ class AllReduceAlgorithms:
         
         return result
 
-    def ring_all_reduce_simple(self, tensor, op=dist.ReduceOp.SUM):
+    def ring_all_reduce(self, tensor, op=dist.ReduceOp.SUM):
         """
         Simplified Ring All-Reduce for educational purposes.
         Works on the full tensor (not chunked) to make the pattern clearer.
@@ -113,7 +113,7 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
     # Warmup
     for _ in range(3):
         _ = algorithms.naive_all_reduce(tensor.clone())
-        _ = algorithms.ring_all_reduce_simple(tensor.clone())
+        _ = algorithms.ring_all_reduce(tensor.clone())
         dist.barrier()
     
     # Benchmark naive all-reduce
@@ -128,7 +128,7 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
     dist.barrier()
     start = time.time()
     for _ in range(num_iterations):
-        _ = algorithms.ring_all_reduce_simple(tensor.clone())
+        _ = algorithms.ring_all_reduce(tensor.clone())
         dist.barrier()
     ring_time = (time.time() - start) / num_iterations
     
@@ -190,7 +190,7 @@ def main():
     dist.barrier()
     
     # 2. Ring all-reduce (SUM)
-    result_ring = algorithms.ring_all_reduce_simple(tensor.clone(), op=dist.ReduceOp.SUM)
+    result_ring = algorithms.ring_all_reduce(tensor.clone(), op=dist.ReduceOp.SUM)
     dist.barrier()
     
     # 3. PyTorch's optimized all-reduce (SUM)
