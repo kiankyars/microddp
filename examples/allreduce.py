@@ -152,11 +152,6 @@ def compare_all_reduce_algorithms(rank, world_size, tensor_size=1000, num_iterat
         print(f"  Ring vs Naive: {naive_time/ring_time:.2f}x")
         print(f"  PyTorch vs Naive: {naive_time/pytorch_time:.2f}x")
         print(f"  PyTorch vs Ring: {ring_time/pytorch_time:.2f}x")
-        print(f"\nNote: For small tensors, naive can be fastest due to:")
-        print(f"  - Fewer communication steps (2 phases vs 2*(n-1) steps)")
-        print(f"  - Lower overhead per step")
-        print(f"  - O(n²) vs O(n) difference is small for small n")
-        print(f"  Ring/PyTorch excel at larger tensor sizes and world sizes")
     
     return naive_time, ring_time, pytorch_time
 
