@@ -12,10 +12,6 @@ Training large models on a single GPU faces three challenges:
 
 ![](../imgs/0.png)
 
-- All formats are supported by torchrun.
-
-![](../imgs/1.png)
-
 ## Data Parallel vs Model Parallel
 
 ### Data Parallelism
@@ -35,6 +31,8 @@ Training large models on a single GPU faces three challenges:
 | Model Replication            | Replicates model across devices within one process (overhead)   | Each process gets its own model replica, handles a subset of the data   |
 | Communication                | Via threads, subject to Python GIL and I/O overhead | Uses collectives (e.g. all-reduce) outside Python GIL                   |
 | Performance                  | Generally slower, even single-machine                | Much faster, highly scalable; preferred for all single/multi-node cases |
+
+![](../imgs/1.png)
 
 ## Distributed Data Parallel (DDP) Workflow
 
@@ -83,10 +81,6 @@ Training large models on a single GPU faces three challenges:
 ![](../imgs/15.png)
 ![](../imgs/16.png)
 
-### All-Reduce (All → All)
-
-- Reduce + broadcast.
-
 ## PyTorch DDP Optimizations
 
 ### Computation-Communication Overlap
@@ -100,5 +94,5 @@ Training large models on a single GPU faces three challenges:
 
 ## Failover and Checkpointing
 
-- Only rank 0 saves model checkpoints to avoid conflicts.
+- Rank 0 saves model checkpoints to avoid conflicts.
 

@@ -2,11 +2,9 @@
 
 ## Overview
 
-All-reduce is the fundamental communication primitive in Distributed Data Parallelism. Understanding how it works is crucial to understanding DDP.
-
-## The Problem
-
 We have `n` ranks, each with a tensor. We want all ranks to have the **sum** (or average) of all tensors.
+
+Notation: \(n\) = number of ranks/GPUs, \(S\) = size of the tensor (in bytes or elements).
 
 ```
 Rank 0: [1, 2, 3]
@@ -14,87 +12,47 @@ Rank 1: [4, 5, 6]
 Rank 2: [7, 8, 9]
 
 After all-reduce SUM:
-All ranks: [12, 15, 18]  (1+4+7, 2+5+8, 3+6+9)
+All ranks: [12, 15, 18]
 ```
 
-## Naive All-Reduce: O(n²)
+## Naive All-Reduce
 
-**Algorithm:**
-1. Each rank sends its tensor to rank 0
-2. Rank 0 sums all tensors
-3. Rank 0 broadcasts result to all ranks
+1. All ranks send their tensors to rank 0.
+2. Rank 0 sums the tensors.
+3. Rank 0 broadcasts the result back to all ranks.
 
-**Communication Complexity:**
-- Phase 1 (Gather): n-1 sends to rank 0
-- Phase 2 (Broadcast): n-1 sends from rank 0
-- Total: 2*(n-1) communication steps
-- But each step involves all ranks, so total messages: O(n²)
+**Communication (total across the network):**
+- About \(2(n - 1)S \approx O(nS)\).
 
-**Why it's inefficient:**
-- Rank 0 becomes a bottleneck
-- Doesn't utilize network bandwidth efficiently
-- Scales poorly with world size
+## Tree All-Reduce
 
-## Ring All-Reduce: O(n)
+- Binary tree topology, giving \(\log n\) height.
+- Per-rank bandwidth: internal nodes send and receive about \(2S\), root and leaves about \(S\).
 
-**Key Insight:** Data moves in a ring, and each rank processes a chunk.
+## Ring All-Reduce
 
-**Algorithm (2 phases):**
+**Phase 1 – Scatter-Reduce**
+- The tensor is split into chunks; on each hop, ranks **accumulate partial sums** for one chunk.
+- After \(n - 1\) steps, each rank holds **one chunk** of the final reduced tensor.
 
-### Phase 1: Scatter-Reduce
-- Data moves in a ring: rank `i` sends to rank `(i+1) mod n`
-- Each rank accumulates partial sums
-- After `n-1` steps, each rank has a chunk of the final sum
+**Phase 2 – All-Gather**
+- Using the same ring, ranks circulate their final chunks.
+- After another \(n - 1\) steps, every rank has **all chunks**, i.e. the full all-reduce result.
 
-**Example with 4 ranks:**
-```
-Step 0: Each rank has its own data
-Step 1: Rank 0 → Rank 1, Rank 1 → Rank 2, Rank 2 → Rank 3, Rank 3 → Rank 0
-Step 2: Continue ring movement
-Step 3: Final step - each rank has accumulated a chunk
-```
-
-### Phase 2: All-Gather
-- Same ring pattern, but now broadcasting the final chunks
-- After `n-1` steps, all ranks have the complete result
-
-**Communication Complexity:**
-- Total steps: 2*(n-1) = O(n)
-- Each step: one send, one receive per rank
-- Total messages: 2*(n-1) = O(n) (optimal!)
-
-**Why it's efficient:**
-- No single bottleneck (all ranks participate equally)
-- Optimal bandwidth utilization
-- Scales linearly with world size
-
-## Complexity Comparison
-
-| World Size | Naive Messages | Ring Messages | Speedup |
-|------------|----------------|---------------|---------|
-| 2          | 2              | 2             | 1x      |
-| 4          | 12             | 6             | 2x      |
-| 8          | 56             | 14            | 4x      |
-| 16         | 240            | 30            | 8x      |
-| 32         | 992            | 62            | 16x     |
-
-**Key Insight:** Ring all-reduce scales linearly, while naive scales quadratically!
+**Communication:**
+- Per rank: \(2(n - 1)\cdot \frac{S}{n} \approx O(S)\).
+- Total across the network: \(2(n - 1)S \approx O(nS)\) (same order as naive, but bandwidth is used much more evenly).
 
 ## Implementation
 
 See `examples/allreduce.py` for educational implementations:
-- `naive_all_reduce()`: O(n²) implementation
-- `ring_all_reduce()`: O(n) ring implementation
-- `ring_all_reduce()`: Optimized chunked version
-
-## When to Use What
-
-- **Naive:** Only for educational purposes or very small world sizes (n ≤ 2)
-- **Ring:** Standard for DDP (used by PyTorch's NCCL backend)
-- **Tree:** Alternative for very large world sizes (hierarchical)
+- `naive_all_reduce()`: Root-based implementation (simple but bottlenecked)
+- `ring_all_reduce()`: Ring implementation using scatter-reduce + all-gather
+- `compare_all_reduce_algorithms()`: Benchmark comparing naive, ring and PyTorch’s optimized all-reduce
 
 ## Further Reading
 
 - [Baidu's All-Reduce Paper](https://github.com/baidu-research/baidu-allreduce)
 - [PyTorch Distributed Documentation](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)
 - [PyTorch Distributed Communication Tutorial](https://docs.pytorch.org/tutorials/intermediate/dist_tuto.html)
+- [How does NCCL decide which algorithm to use?](https://github.com/NVIDIA/nccl/issues/457)
