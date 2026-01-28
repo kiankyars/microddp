@@ -50,3 +50,27 @@ uv run torchrun --nproc-per-node=4 src/main.py
 │   └── performance.py    # Performance analysis tools
 └── uv.lock
 ```
+
+## Library
+
+**1. `comms.py`**
+
+- **Initialization:** A wrapper around `dist.init_process_group()`.
+- **All-Reduce:** Implemented using reduce + broadcast.
+
+**2. `model.py`**
+
+- **FullMLP:** A class `FullMLP(nn.Module)` with 16 `Linear` layers. Replicated on each rank.
+
+**3. `schedule.py`**
+
+- **Naive DP:** Manual gradient averaging after backward.
+- **DDP:** Gradient hooks for automatic synchronization during backward.
+- **Bucketing:** Optional bucketed hooks for better efficiency.
+
+**4. `bucketing.py`**
+
+- **GradientBucket:** Groups parameters and their gradients.
+- **BucketedDDPHooks:** Manages buckets and registers hooks.
+- **compare_bucketed_vs_unbucketed():** Performance comparison.
+
