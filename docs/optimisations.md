@@ -1,3 +1,77 @@
+# Optimisations
+
+## Hooks
+
+- Last layers compute gradients first, hooks all-reduce them once they're calculated
+- Enables **computation/communication overlap**
+
+## How DDP Uses Hooks
+
+### Without Hooks
+
+```python
+loss.backward()
+# All gradients computed, THEN we communicate
+for param in model.parameters():
+    all_reduce_mean(param.grad)
+```
+
+### With Hooks
+
+```python
+# Hooks registered before backward
+register_ddp_hooks(model, comms)
+
+loss.backward()
+# Hooks called as each gradient is ready
+```
+
+**Timeline:**
+```
+[Compute grad3] → [All-reduce grad3] ┐
+[Compute grad2] → [All-reduce grad2] ├─ Overlap!
+[Compute grad1] → [All-reduce grad1] ┘
+[Optimizer step]
+```
+
+## Hook Implementation
+
+### Simple Hook
+
+```python
+def make_hook():
+    def hook(grad):
+        if grad is not None:
+            all_reduce_mean(grad)  # Synchronize immediately
+        return grad
+    return hook
+
+param.register_hook(make_hook())
+```
+
+## Demo
+
+```bash
+torchrun --nproc-per-node=4 examples/hooks.py
+```
+
+## Pitfalls
+
+### Closure Issues
+
+```python
+# WRONG - all hooks use the last param!
+for param in model.parameters():
+    def hook(grad):
+        all_reduce_mean(param.grad)
+    param.register_hook(hook)
+```
+
+### Timing Issues
+
+- The above hooks do not work with gradient accumulation
+
+
 # Gradient Bucketing in DDP
 
 ## The Problem
@@ -111,5 +185,7 @@ for step in range(steps):
 
 ## Further Reading
 
+- [PyTorch Autograd Hooks](https://pytorch.org/docs/stable/autograd.html#torch.autograd.Function.register_hook)
+- [DDP Hook Implementation](https://github.com/pytorch/pytorch/blob/master/torch/nn/parallel/distributed.py)
 - [PyTorch DDP Bucketing](https://pytorch.org/docs/stable/notes/ddp.html#internal-design)
 - [Horovod Bucketing](https://horovod.readthedocs.io/en/stable/tuning.html#gradient-bucketing)
