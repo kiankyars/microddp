@@ -45,7 +45,7 @@ All ranks: [12, 15, 18]
 
 ## Implementation
 
-See `examples/allreduce.py`
+See `src/allreduce.py`
 
 ## Further Reading
 

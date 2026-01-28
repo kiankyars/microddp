@@ -8,45 +8,38 @@ bandwidth utilization.
 
 import torch
 import torch.distributed as dist
-from collections import defaultdict
-from typing import List, Callable
+from typing import List
 
 
 class GradientBucket:
     """
-    A bucket that groups multiple parameter gradients together.
+    A simple bucket that groups multiple parameter gradients together.
     """
-    
+
     def __init__(self, params: List[torch.nn.Parameter], bucket_size: int):
         self.params = params
         self.bucket_size = bucket_size
         self.gradients = []
         self.ready = False
-        
+
     def add_gradient(self, grad: torch.Tensor):
-        """Add a gradient to this bucket."""
+        """Add a gradient to this bucket and mark it ready once full."""
         self.gradients.append(grad)
         if len(self.gradients) >= len(self.params):
             self.ready = True
-    
-    def all_reduce(self, comms, op=dist.ReduceOp.SUM):
-        """
-        Perform all-reduce on the concatenated gradients in this bucket.
-        """
+
+    def all_reduce(self, comms):
+        """All-reduce the concatenated gradients in this bucket."""
         if not self.gradients:
             return
-        
-        # Concatenate all gradients in the bucket
+
         flat_grads = torch.cat([g.flatten() for g in self.gradients])
-        
-        # All-reduce the concatenated tensor
-        dist.all_reduce(flat_grads, op=op)
-        
-        # Split back and update original gradients
+        dist.all_reduce(flat_grads)
+
         offset = 0
-        for i, grad in enumerate(self.gradients):
+        for grad in self.gradients:
             grad_size = grad.numel()
-            grad.copy_(flat_grads[offset:offset+grad_size].reshape(grad.shape))
+            grad.copy_(flat_grads[offset : offset + grad_size].reshape(grad.shape))
             offset += grad_size
 
 
@@ -122,7 +115,7 @@ class BucketedDDPHooks:
                 bucket = self.param_to_bucket.get(param)
                 if bucket is None:
                     # Fallback: all-reduce immediately if not in a bucket
-                    self.comms.all_reduce_mean(grad)
+                    self.comms.allreducemean(grad)
                     return grad
                 
                 # Add gradient to bucket
@@ -131,7 +124,7 @@ class BucketedDDPHooks:
                 # If bucket is ready, all-reduce it
                 if bucket.ready and bucket not in self.pending_buckets:
                     self.pending_buckets.add(bucket)
-                    bucket.all_reduce(self.comms, op=dist.ReduceOp.SUM)
+                    bucket.all_reduce(self.comms)
                     # Average the gradients
                     for grad in bucket.gradients:
                         grad.div_(self.comms.world_size)
@@ -144,80 +137,3 @@ class BucketedDDPHooks:
         for param in self.model.parameters():
             if param.requires_grad:
                 param.register_hook(make_hook(param))
-    
-    def get_bucket_info(self):
-        """Return information about buckets for debugging/analysis."""
-        return {
-            'num_buckets': len(self.buckets),
-            'bucket_sizes': [len(b.params) for b in self.buckets],
-            'bucket_sizes_mb': [b.bucket_size / (1024 * 1024) for b in self.buckets]
-        }
-
-
-def compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, device):
-    """
-    Compare performance of bucketed vs unbucketed gradient synchronization.
-    """
-    import time
-    
-    # Test unbucketed (one all-reduce per parameter)
-    model_copy1 = type(model)(model.net[0].in_features, len(model.net) // 2).to(device)
-    optimizer1 = torch.optim.Adam(model_copy1.parameters())
-    
-    start = time.time()
-    for _ in range(10):
-        optimizer1.zero_grad()
-        loss = model_copy1(input_chunk, target_chunk)
-        loss.backward()
-        # Unbucketed: all-reduce each gradient separately
-        for param in model_copy1.parameters():
-            if param.grad is not None:
-                comms.all_reduce_mean(param.grad)
-        optimizer1.step()
-    unbucketed_time = time.time() - start
-    
-    # Test bucketed
-    model_copy2 = type(model)(model.net[0].in_features, len(model.net) // 2).to(device)
-    optimizer2 = torch.optim.Adam(model_copy2.parameters())
-    bucketed_hooks = BucketedDDPHooks(model_copy2, comms, bucket_size_mb=25.0)
-    
-    start = time.time()
-    for _ in range(10):
-        optimizer2.zero_grad()
-        loss = model_copy2(input_chunk, target_chunk)
-        loss.backward()
-        optimizer2.step()
-    bucketed_time = time.time() - start
-    
-    if comms.rank == 0:
-        print(f"\n=== Bucketing Performance Comparison ===")
-        print(f"Unbucketed time: {unbucketed_time*1000:.2f} ms")
-        print(f"Bucketed time: {bucketed_time*1000:.2f} ms")
-        print(f"Speedup: {unbucketed_time/bucketed_time:.2f}x")
-    
-    return unbucketed_time, bucketed_time
-
-
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    
-    import torch.optim as optim
-    from src.comms import init_distributed, DataParallelComms
-    from src.model import FullMLP
-    
-    # Initialize
-    rank, world_size, device = init_distributed()
-    comms = DataParallelComms(rank, world_size)
-    
-    # Setup model and data
-    model = FullMLP(128, 16).to(device)
-    chunk_size = 32 // world_size
-    input_chunk = torch.randn(chunk_size, 128, device=device)
-    target_chunk = torch.randint(0, 2, (chunk_size,), device=device)
-    
-    # Run comparison
-    compare_bucketed_vs_unbucketed(model, comms, input_chunk, target_chunk, device)
-    
-    torch.distributed.destroy_process_group()

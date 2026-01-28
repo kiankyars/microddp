@@ -8,7 +8,7 @@
 
 - `nn.Sequential` 16 layer MLP.
 
-### [Manual](https://github.com/kiankyars/microddp/blob/main/examples/manual.py)
+### [Manual](https://github.com/kiankyars/microddp/blob/main/src/manual.py)
 
 - Manually split the batch across two "GPUs" and average gradients.
 
@@ -20,15 +20,12 @@
 
 - Forward on local chunk, backward, then all-reduce gradients using comms.
 
-### [Gradient Hooks](./hooks.md)
+### [Optimisations](./optimisations.md)
 
-- Hooks enable automatic gradient synchronization.
-- Run `examples/hooks.py`.
-
-### [Gradient Bucketing](./bucketing.md)
-
-- Group gradients into buckets.
-- Run `src/bucketing.py`.
+- Hooks and gradient bucketing:
+  - Hooks enable automatic gradient synchronization.
+  - Bucketing groups gradients into larger messages.
+- Run `src/hooks.py` and `src/bucketing.py`.
 
 ### [Performance Analysis](./performance.md)
 

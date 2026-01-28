@@ -13,7 +13,7 @@
 loss.backward()
 # All gradients computed, THEN we communicate
 for param in model.parameters():
-    all_reduce_mean(param.grad)
+    allreducemean(param.grad)
 ```
 
 ### With Hooks
@@ -42,7 +42,7 @@ loss.backward()
 def make_hook():
     def hook(grad):
         if grad is not None:
-            all_reduce_mean(grad)  # Synchronize immediately
+            allreducemean(grad)  # Synchronize immediately
         return grad
     return hook
 
@@ -52,7 +52,7 @@ param.register_hook(make_hook())
 ## Demo
 
 ```bash
-torchrun --nproc-per-node=4 examples/hooks.py
+torchrun --nproc-per-node=4 src/hooks.py
 ```
 
 ## Pitfalls
@@ -63,7 +63,7 @@ torchrun --nproc-per-node=4 examples/hooks.py
 # WRONG - all hooks use the last param!
 for param in model.parameters():
     def hook(grad):
-        all_reduce_mean(param.grad)
+        allreducemean(param.grad)
     param.register_hook(hook)
 ```
 
