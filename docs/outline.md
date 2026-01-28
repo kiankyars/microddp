@@ -2,6 +2,8 @@
 
 ### [Intro](./intro.md)
 
+- What is distributed training?
+
 ### [Baseline](https://github.com/kiankyars/microddp/blob/main/src/baseline.py)
 
 - `nn.Sequential` 16 layer MLP.

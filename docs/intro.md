@@ -1,267 +1,133 @@
-### Motivation for DP
+# Introduction to Distributed Data Parallelism
 
-- **The Data Wall:** Why we need to process more data faster.
-  - **Batch Size:** 1 Million samples.
-  - **Training Time:** Days on a single GPU.
-  - **Solution:** Data Parallelism (replicate model, split data).
+## Why Distributed Training?
 
+Training large models on a single GPU faces three challenges:
 
-# Synchronization Primitives in Distributed Training
+1. **Model too large**: May not fit in GPU memory.
+2. **Batch size**: Limited by GPU memory, leading to OOM errors.
+3. **Time**: Can take years on huge datasets.
 
-## Overview
+We can either scale horizontally (multiple GPUs/servers) or vertically (bigger GPU).
 
-Beyond all-reduce, distributed training needs other communication primitives for coordination.
+![](../imgs/0.png)
 
-## Barrier
+All formats are supported by torchrun.
 
-**What it does:** All ranks wait until everyone arrives.
-
-```python
-comms.barrier()
-# All ranks wait here until everyone reaches this point
-```
-
-**Use cases:**
-- Synchronize before timing measurements
-- Ensure all ranks finish before proceeding
-- Coordinate checkpoint saving/loading
+![](../imgs/1.png)
 
-**Example:**
-```python
-# Measure time accurately across all ranks
-comms.barrier()
-start = time.time()
-# ... do work ...
-comms.barrier()
-end = time.time()
-```
-
-## Broadcast
-
-**What it does:** Send tensor from one rank to all others.
-
-```python
-# Rank 0 has the tensor, all others get a copy
-if rank == 0:
-    tensor = torch.randn(10, 10)
-else:
-    tensor = torch.zeros(10, 10)
-
-comms.broadcast(tensor, src=0)
-# Now all ranks have the same tensor (from rank 0)
-```
-
-**Use cases:**
-- Initialize model weights from rank 0
-- Distribute hyperparameters
-- Share random seeds for reproducibility
-
-**Example:**
-```python
-# Initialize model on rank 0, broadcast to all
-if rank == 0:
-    model_state = model.state_dict()
-else:
-    model_state = None
-
-# Broadcast state dict (simplified - actual implementation more complex)
-comms.broadcast(model_state, src=0)
-```
-
-### How Broadcast Works: Divide-and-Conquer (O(log n))
-
-Broadcast uses a divide-and-conquer strategy to achieve O(log n) time complexity:
-
-**Algorithm (Binary Tree):**
-1. Rank 0 (root) sends to rank 1
-2. Ranks 0-1 send to ranks 2-3
-3. Ranks 0-3 send to ranks 4-7
-4. Continue until all ranks have the data
-
-**Example with 8 ranks:**
-```
-Step 1: 0 → 1
-Step 2: 0 → 2, 1 → 3
-Step 3: 0 → 4, 1 → 5, 2 → 6, 3 → 7
-```
-
-**Time Complexity:** O(log n) steps where n is world size
-- Naive approach (0 sends to each rank): O(n) steps
-- Divide-and-conquer: O(log n) steps
-
-**Why it's efficient:** Each step doubles the number of ranks with the data, so we need log₂(n) steps to reach all n ranks.
-
-## Scatter
-
-**What it does:** Distribute different chunks of data to each rank.
-
-```python
-# Rank 0 has a list of tensors, each rank gets one
-if rank == 0:
-    scatter_list = [torch.randn(10) for _ in range(world_size)]
-else:
-    scatter_list = None
-
-my_chunk = comms.scatter(scatter_list, src=0)
-# Rank i gets scatter_list[i]
-```
-
-**Use cases:**
-- Distribute different data chunks to each rank
-- Split a large dataset across ranks
-- Distribute work items
-
-**Example:**
-```python
-# Distribute batch indices to each rank
-if rank == 0:
-    all_indices = list(range(batch_size))
-    chunks = [all_indices[i::world_size] for i in range(world_size)]
-else:
-    chunks = None
-
-my_indices = comms.scatter(chunks, src=0)
-```
-
-## Gather
-
-**What it does:** Collect tensors from all ranks to one rank.
-
-```python
-# Each rank has a tensor, rank 0 collects all
-my_tensor = torch.randn(10)
-
-if rank == 0:
-    gather_list = [torch.zeros(10) for _ in range(world_size)]
-    comms.gather(my_tensor, gather_list, dst=0)
-    # gather_list[i] now has tensor from rank i
-else:
-    comms.gather(my_tensor, dst=0)
-```
-
-**Use cases:**
-- Collect results from all ranks to rank 0 for logging
-- Aggregate metrics across ranks
-- Collect validation results
-
-**Example:**
-```python
-# Collect losses from all ranks
-local_loss = loss.item()
-
-if rank == 0:
-    all_losses = [0.0] * world_size
-    comms.gather(torch.tensor([local_loss]), 
-                 [torch.tensor([l]) for l in all_losses], dst=0)
-    avg_loss = sum(all_losses) / world_size
-    print(f"Average loss: {avg_loss}")
-else:
-    comms.gather(torch.tensor([local_loss]), dst=0)
-```
-
-## Reduce
-
-**What it does:** Combine tensors from all ranks using an operation (sum, max, min) and store result on one rank.
-
-```python
-# Each rank has a tensor, rank 0 gets the sum
-my_tensor = torch.randn(10)
-
-if rank == 0:
-    result = torch.zeros(10)
-    comms.reduce(my_tensor, dst=0, op=dist.ReduceOp.SUM)
-    # result now contains sum of all tensors
-else:
-    comms.reduce(my_tensor, dst=0, op=dist.ReduceOp.SUM)
-```
-
-**Use cases:**
-- Sum metrics across all ranks
-- Find maximum/minimum values across ranks
-- Aggregate before all-reduce (reduce is one-way, all-reduce is two-way)
-
-### How Reduce Works: Divide-and-Conquer (O(log n))
-
-Reduce uses the same divide-and-conquer strategy as broadcast, but in reverse:
-
-**Algorithm (Binary Tree, bottom-up):**
-1. Ranks 0-1 reduce to rank 0
-2. Ranks 2-3 reduce to rank 2, then rank 2 sends to rank 0
-3. Ranks 4-7 reduce to rank 4, then rank 4 sends to rank 0
-4. Continue until all data is reduced to rank 0
-
-**Example with 8 ranks (sum operation):**
-```
-Step 1: 1 → 0 (sum), 3 → 2 (sum), 5 → 4 (sum), 7 → 6 (sum)
-Step 2: 2 → 0 (sum), 6 → 4 (sum)
-Step 3: 4 → 0 (sum)
-```
-
-**Time Complexity:** O(log n) steps where n is world size
-- Naive approach (each rank sends to 0): O(n) steps
-- Divide-and-conquer: O(log n) steps
-
-**Why it's efficient:** Each step halves the number of ranks that need to send data, so we need log₂(n) steps to reduce everything to rank 0.
-
-**Note:** All-reduce is essentially reduce + broadcast, so it also uses divide-and-conquer and achieves O(log n) complexity (though ring all-reduce is often preferred for bandwidth efficiency).
-
-## All-Gather
-
-**What it does:** Collect tensors from all ranks to all ranks.
-
-```python
-# Each rank has a tensor, all ranks get all tensors
-my_tensor = torch.randn(10)
-
-all_tensors = comms.all_gather(my_tensor)
-# all_tensors[i] is the tensor from rank i
-# All ranks have the same all_tensors list
-```
-
-**Use cases:**
-- Collecting metrics that all ranks need
-- Sharing local batch statistics
-- Implementing custom reduction operations
-
-**Example:**
-```python
-# All ranks need to know batch statistics from all ranks
-local_mean = input_chunk.mean()
-
-all_means = comms.all_gather(torch.tensor([local_mean]))
-global_mean = torch.stack(all_means).mean()
-```
-
-## Communication Patterns Summary
-
-| Primitive | Source → Dest | Use Case |
-|-----------|---------------|----------|
-| All-Reduce | All → All (sum) | Gradient synchronization |
-| Broadcast | One → All | Model initialization |
-| Reduce | All → One (sum/max/min) | Metric aggregation |
-| Scatter | One → All (different) | Data distribution |
-| Gather | All → One | Result collection |
-| All-Gather | All → All (collect) | Shared statistics |
-| Barrier | All → All (sync) | Synchronization |
-
-## Implementation
-
-See `src/comms.py` for implementations of all primitives:
-- `barrier()`: Synchronization
-- `broadcast()`: One-to-all
-- `reduce()`: All-to-one (with reduction operation)
-- `scatter()`: One-to-all (different data)
-- `gather()`: All-to-one
-- `all_gather()`: All-to-all (collection)
-
-## Best Practices
-
-1. **Use barriers for timing:** Ensures accurate measurements
-2. **Broadcast for initialization:** Ensures all ranks start with same state
-3. **Gather for logging:** Only rank 0 needs to print/log
-4. **All-gather sparingly:** More expensive than gather
-
-## Further Reading
-
-- [MPI Communication Primitives](https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node109.htm)
-- [PyTorch Distributed Communication](https://pytorch.org/docs/stable/distributed.html#collective-communication)
+## Data Parallel vs Model Parallel
+
+### Data Parallelism
+
+- **When**: Model fits in a single GPU.
+- **How**: Replicate model across GPUs, split data across GPUs.
+- **Each GPU**: Has full model, processes different data chunk.
+- **Synchronization**: Average gradients across all GPUs.
+
+### Model Parallelism
+
+- **When**: Model too large for single GPU.
+- **How**: Split model layers across GPUs.
+- **Each GPU**: Has part of model, processes same data.
+- **Synchronization**: Pass activations between GPUs.
+
+### DataParallel vs DistributedDataParallel
+
+| Aspect                       | DataParallel (DP)                                     | DistributedDataParallel (DDP)                                           |
+|------------------------------|------------------------------------------------------|-------------------------------------------------------------------------|
+| Process Model                | Single-process, multi-threaded                       | Multi-process, each process controls one device (GPU)                   |
+| Machine Support              | Only works on a single machine                       | Supports both single-machine and multi-machine setups                   |
+| Model Replication            | Replicates model across devices within one process (overhead)   | Each process gets its own model replica, handles a subset of the data   |
+| Communication                | Via threads, subject to Python GIL and I/O overhead | Uses collectives (e.g. all-reduce) outside Python GIL                   |
+| Performance                  | Generally slower, even single-machine                | Much faster, highly scalable; preferred for all single/multi-node cases |
+
+## Distributed Data Parallel (DDP) Workflow
+
+1. **Broadcast**: Initialize model weights on one node, send to all nodes.
+   ![](../imgs/2.png)
+   ![](../imgs/3.png)
+
+2. **Forward/Backward**: Each node trains on different data chunk, computes local gradients.
+   ![](../imgs/4.png)
+
+3. **All-Reduce**: Sum gradients across all nodes, distribute result to all nodes.
+   ![](../imgs/5.png)
+   ![](../imgs/6.png)
+
+4. **Update**: Each node updates its model using the averaged gradients.
+   ![](../imgs/7.png)
+
+## Communication Primitives
+
+### Point-to-Point vs Collective Communication
+
+**Point-to-Point**:
+- Time: O(n) where n = number of receivers.
+- ![](../imgs/12.png)
+
+**Collective Communication**:
+- Time: O(log n) using divide-and-conquer.
+- ![](../imgs/13.png)
+
+### Broadcast (One → All)
+
+- **Use**: Send initial weights to all nodes.
+- **Algorithm**: Divide-and-conquer (binary tree).
+- **Complexity**: O(log n) steps.
+- **Example**: Rank 0 sends to rank 1, then ranks 0-1 send to ranks 2-3, etc.
+
+![](../imgs/14.png)
+![](../imgs/15.png)
+![](../imgs/16.png)
+
+### Reduce (All → One)
+
+- **Use**: Sum gradients from all nodes to one node.
+- **Algorithm**: Divide-and-conquer (reverse binary tree).
+- **Complexity**: O(log n) steps.
+- **Example**: Ranks 0-1 reduce to rank 0, ranks 2-3 reduce to rank 2, then rank 2 sends to rank 0.
+
+![](../imgs/8.png)
+![](../imgs/9.png)
+![](../imgs/10.png)
+![](../imgs/11.png)
+
+### All-Reduce (All → All)
+
+- **Use**: Sum gradients and distribute result to all nodes (used in DDP).
+- **Algorithm**: Optimized version of Reduce + Broadcast.
+- **Complexity**: O(log n) or O(n) depending on algorithm (ring all-reduce is O(n) but bandwidth-optimal).
+
+## PyTorch DDP Optimizations
+
+### Computation-Communication Overlap
+
+- **Problem**: GPUs idle during gradient communication.
+- **Solution**: Communicate gradients as soon as they're computed during backward pass.
+- **How**: Gradient hooks trigger all-reduce immediately when each gradient is ready.
+- **Result**: Communication overlaps with gradient computation, reducing idle time.
+
+### Bucketing
+
+- **Problem**: Many small gradient messages = high communication overhead.
+- **Solution**: Group gradients into buckets (typically 25MB).
+- **How**: Gradients packed into buckets, all-reduced together.
+- **Result**: Fewer messages, better bandwidth utilization.
+
+![](../imgs/17.png)
+
+## Key Concepts
+
+- **RANK**: Globally unique ID for each GPU/node in the cluster.
+- **LOCAL_RANK**: ID of GPU on the local machine (0, 1, 2, 3...).
+- **WORLD_SIZE**: Total number of GPUs/nodes.
+- **Process Group**: Collection of processes that can communicate.
+
+## Failover and Checkpointing
+
+- **Problem**: Node crashes can lose all training progress.
+- **Solution**: Save checkpoints to shared storage periodically.
+- **Best Practice**: Only rank 0 saves checkpoints to avoid conflicts.
+- **Recovery**: Resume training from last checkpoint after crash.
+
