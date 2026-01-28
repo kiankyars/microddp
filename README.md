@@ -37,17 +37,16 @@ uv run torchrun --nproc-per-node=4 src/main.py
 │   └── step6_ddp.py
 ├── pyproject.toml
 ├── src
+│   ├── allreduce.py      # All-reduce algorithms from scratch
+│   ├── baseline.py       # Single GPU baseline
 │   ├── bucketing.py      # Gradient bucketing implementation
 │   ├── comms.py          # Communication primitives
+│   ├── hooks.py          # Hook execution demonstration
 │   ├── main.py           # Training entry point
-│   ├── model.py          # MLP model definition
-│   └── schedule.py       # DDP schedules
-├── examples
-│   ├── allreduce.py      # All-reduce algorithms from scratch
-│   ├── baseline.py        # Single GPU baseline
-│   ├── hooks.py           # Hook execution demonstration
 │   ├── manual.py         # Manual 2-GPU example
-│   └── performance.py    # Performance analysis tools
+│   ├── model.py          # MLP model definition
+│   ├── performance.py    # Performance analysis tools
+│   └── schedule.py       # DDP schedules
 └── uv.lock
 ```
 

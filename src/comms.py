@@ -6,17 +6,22 @@ import torch.distributed as dist
 
 def init_distributed():
     """
-    Initializes the distributed process group.
-    Reads state directly from environment variables set by torchrun.
+    Initialize the distributed process group from torchrun environment variables.
+
+    Returns:
+        (rank, world_size, device)
     """
-    # Read Environment Variables (set by torchrun)
     rank = int(os.environ["RANK"])
     world_size = int(os.environ["WORLD_SIZE"])
-    acc = torch.accelerator.current_accelerator()
-    backend = torch.distributed.get_default_backend_for_device(acc)
-    # Initialize the process group
+
+    device = torch.accelerator.current_accelerator()
+    if device == torch.device("mps"):
+        device = "cpu"
+    backend = torch.distributed.get_default_backend_for_device(device)
+
     dist.init_process_group(backend, rank=rank, world_size=world_size)
-    return rank, world_size, acc
+    return rank, world_size, device
+
 
 def cleanup():
     dist.destroy_process_group()

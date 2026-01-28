@@ -11,7 +11,7 @@ import torch.distributed as dist
 from src.comms import DataParallelComms, init_distributed, cleanup
 from src.model import FullMLP
 from src.allreduce import allreduce1, allreduce2, allreduce3, allreduce4
-from src.bucketing import GradientBucket, BucketedDDPHooks
+from src.hooks import GradientBucket, BucketedDDPHooks
 
 
 def compare_allreduce_algorithms(rank, world_size, device, tensor_size=1000, num_iterations=10):

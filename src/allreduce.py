@@ -2,10 +2,10 @@
 All-reduce implementations for distributed training.
 
 Four different implementations demonstrating various approaches:
-1. allreduce1: reduce + broadcast (simplest)
-2. allreduce2: manual send/recv (educational)
-3. allreduce3: reduce_scatter + all_gather (bandwidth efficient)
-4. allreduce4: ring all-reduce (optimal for large tensors)
+1. allreduce1: reduce + broadcast
+2. allreduce2: manual send/recv
+3. allreduce3: reduce_scatter + all_gather
+4. allreduce4: ring all-reduce
 """
 
 import torch

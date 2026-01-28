@@ -16,23 +16,7 @@ import torch
 import torch.distributed as dist
 
 
-def init_distributed():
-    """Initialize distributed environment."""
-    rank = int(os.environ["RANK"])
-    world_size = int(os.environ["WORLD_SIZE"])
-    local_rank = int(os.environ["LOCAL_RANK"])
-
-    if torch.cuda.is_available():
-        device = torch.device(f"cuda:{local_rank}")
-        dist.init_process_group(backend="nccl", rank=rank, world_size=world_size, device_id=device)
-    else:
-        device = torch.device("cpu")
-        dist.init_process_group(backend="gloo", rank=rank, world_size=world_size)
-
-    return rank, world_size, device
-
-
-def ring_all_reduce(tensor, rank, world_size, op=dist.ReduceOp.SUM):
+def ring_all_reduce(tensor, rank, world_size):
     """
     Simplified Ring All-Reduce for educational purposes.
     
@@ -85,7 +69,7 @@ def main():
     dist.barrier()
     
     # TODO: Perform ring all-reduce and verify all ranks get the same result
-    result = ring_all_reduce(tensor, rank, world_size, op=dist.ReduceOp.SUM)
+    result = ring_all_reduce(tensor, rank, world_size)
     
     if rank == 0:
         print("\nAfter ring all-reduce (SUM):")

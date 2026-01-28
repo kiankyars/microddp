@@ -47,7 +47,7 @@ target_chunk = None  # TODO
 #     # TODO: All-reduce gradients (average across all ranks)
 #     for param in model.parameters():
 #         if param.grad is not None:
-#             comms.all_reduce_mean(param.grad)
+#             comms.allreducemean(param.grad)
 #
 #     # TODO: Optimizer step
 #     optimizer.step()

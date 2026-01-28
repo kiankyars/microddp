@@ -3,6 +3,18 @@ import torch.distributed as dist
 from bucketing import BucketedDDPHooks
 
 
+def baseline_step(model, input_batch, target_batch, device):
+    """
+    Single-process baseline step:
+    1. Forward on the full batch
+    2. Backward to compute gradients
+    (no distributed communication)
+    """
+    loss = model(input_batch.to(device), target_batch.to(device))
+    loss.backward()
+    return loss
+
+
 def naive_data_parallel_step(model, comms, input_chunk, target_chunk, device):
     """
     Naive Data Parallel step:
@@ -26,7 +38,7 @@ def naive_data_parallel_step(model, comms, input_chunk, target_chunk, device):
     # This happens AFTER all gradients are computed (no overlap)
     for param in model.parameters():
         if param.grad is not None:
-            comms.all_reduce_mean(param.grad)
+            comms.allreducemean(param.grad)
 
     return loss
 
@@ -47,38 +59,4 @@ def ddp_step(model, comms, input_chunk, target_chunk, device):
     loss.backward()
 
     return loss
-
-
-def register_ddp_hooks(model, comms, use_bucketing=True, bucket_size_mb=25.0):
-    """
-    Register gradient hooks for DDP-style all-reduce.
-    This replaces the manual all-reduce in backward pass.
-    
-    Args:
-        model: Model to register hooks on
-        comms: Communication primitives
-        use_bucketing: Whether to use gradient bucketing (default: True)
-        bucket_size_mb: Bucket size in MB (default: 25.0)
-    
-    Returns:
-        BucketedDDPHooks instance if use_bucketing=True, None otherwise
-    """
-    if use_bucketing:
-        # Use bucketed hooks for better efficiency
-        return BucketedDDPHooks(model, comms, bucket_size_mb=bucket_size_mb)
-    else:
-        # Simple hooks: one all-reduce per parameter
-        for param in model.parameters():
-            if param.requires_grad:
-
-                def make_hook(param):
-                    def hook(grad):
-                        if grad is not None:
-                            comms.all_reduce_mean(grad)
-                        return grad
-
-                    return hook
-
-                param.register_hook(make_hook(param))
-        return None
 

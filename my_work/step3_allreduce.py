@@ -2,10 +2,9 @@ import os
 import torch
 import torch.distributed as dist
 
-from src.comms import DataParallelComms, init_distributed
+from src.comms import init_distributed
 
-# TODO: Initialize distributed environment
-rank, world_size, device = None, None, None  # TODO: init_distributed()
+rank, world_size, device = init_distributed()
 comms = None  # TODO: DataParallelComms(rank, world_size)
 
 # Each rank starts with different data
@@ -27,8 +26,8 @@ if rank == 0:
 # print(f"Rank {rank}: {tensor.cpu().tolist()}")
 # dist.barrier()
 
-# TODO: Use comms.all_reduce_mean() to average the tensor across all ranks
-# comms.all_reduce_mean(tensor)
+# TODO: Use comms.allreducemean() to average the tensor across all ranks
+# comms.allreducemean(tensor)
 
 if rank == 0:
     print("\nAfter all-reduce_mean:")

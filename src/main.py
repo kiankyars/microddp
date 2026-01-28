@@ -14,9 +14,9 @@ import torch
 import torch.optim as optim
 
 # Import our modules
-from comms import DataParallelComms, init_distributed
+from comms import DataParallelComms, init_distributed, cleanup
 from model import FullMLP
-from schedule import naive_data_parallel_step, register_ddp_hooks
+from schedule import naive_data_parallel_step, register_ddp_hooks, baseline_step
 
 # Hyperparameters
 BATCH_SIZE = 32
@@ -76,5 +76,5 @@ if rank == 0:
     duration = time.time() - start_time
     print(f"Final Loss: {loss.item():.6f} | Time: {duration:.3f}s")
 
-torch.distributed.destroy_process_group()
+cleanup()
 

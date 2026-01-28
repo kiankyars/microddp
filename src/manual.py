@@ -3,29 +3,13 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from model import FullMLP
 
 # 1. Hyperparameters
 BATCH_SIZE = 32
 HIDDEN_DIM = 128
 TOTAL_LAYERS = 16
 STEPS = 50
-
-
-class FullMLP(nn.Module):
-    def __init__(self, dim, depth):
-        super().__init__()
-        layers = []
-        for _ in range(depth):
-            layers.append(nn.Linear(dim, dim))
-            layers.append(nn.ReLU())
-        layers.append(nn.Linear(dim, 2))
-        self.net = nn.Sequential(*layers)
-        self.loss_fn = nn.CrossEntropyLoss()
-
-    def forward(self, x, targets):
-        logits = self.net(x)
-        return self.loss_fn(logits, targets)
-
 
 # 2. Setup
 torch.manual_seed(42)
