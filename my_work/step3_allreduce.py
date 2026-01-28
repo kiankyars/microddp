@@ -1,42 +1,92 @@
-import os
+"""
+Step 3: All-Reduce from Scratch
+
+This exercise implements ring all-reduce, the O(n) algorithm used in DDP.
+Run with: torchrun --nproc-per-node=4 my_work/step3_allreduce.py
+
+Ring all-reduce works in two phases:
+1. Scatter-Reduce: Data moves in a ring, accumulating partial sums
+2. All-Gather: Final result is broadcast around the ring
+
+This achieves O(n) communication complexity vs O(n²) for naive approaches.
+"""
+
 import torch
 import torch.distributed as dist
 
 from src.comms import init_distributed
 
-rank, world_size, device = init_distributed()
-comms = None  # TODO: DataParallelComms(rank, world_size)
 
-# Each rank starts with different data
-# Rank 0: [1.0, 2.0, 3.0]
-# Rank 1: [4.0, 5.0, 6.0]
-# Rank 2: [7.0, 8.0, 9.0]
-# After all-reduce_mean: all ranks should have the average
+def ring_all_reduce(tensor, rank, world_size):
+    """
+    Simplified Ring All-Reduce for educational purposes.
+    
+    Phase 1 (Scatter-Reduce): Data moves in a ring, accumulating sums
+    Phase 2 (All-Gather): Final result is broadcast around the ring
+    
+    Time Complexity: O(n) where n is world_size
+    """
+    result = tensor.clone()
+    
+    # Phase 1: Scatter-Reduce
+    # TODO: Implement scatter-reduce phase
+    # For each step: send to (rank + 1) % world_size, receive from (rank - 1) % world_size, accumulate
+    for step in range(world_size - 1):
+        send_to = (rank + 1) % world_size
+        recv_from = (rank - 1) % world_size
+        
+        # TODO: Send result, receive, and accumulate
+        pass
+    
+    # Phase 2: All-Gather
+    # TODO: Implement all-gather phase
+    # For each step: send to (rank + 1) % world_size, receive from (rank - 1) % world_size
+    for step in range(world_size - 1):
+        send_to = (rank + 1) % world_size
+        recv_from = (rank - 1) % world_size
+        
+        # TODO: Send result, receive, and update
+        pass
+    
+    # TODO: If op is MEAN, divide result by world_size
+    
+    return result
 
-initial_value = rank * 3 + 1 if rank is not None else 0
-tensor = torch.tensor([float(initial_value), float(initial_value + 1), float(initial_value + 2)], 
-                     device=device if device else "cpu")
 
-if rank == 0:
-    print(f"=== All-Reduce Test (World Size: {world_size}) ===\n")
-    print("Initial tensors:")
+def main():
+    rank, world_size, device = init_distributed()
+    
+    # Each rank starts with different data
+    initial_value = rank + 1
+    tensor = torch.tensor([initial_value, initial_value + 1, initial_value + 2, initial_value + 3], 
+                         device=device, dtype=torch.float32)
+    
+    if rank == 0:
+        print(f"=== Ring All-Reduce Example (World Size: {world_size}) ===\n")
+        print("Initial tensors:")
+    
+    dist.barrier()
+    print(f"Rank {rank}: {tensor.cpu().tolist()}")
+    dist.barrier()
+    
+    # TODO: Perform ring all-reduce and verify all ranks get the same result
+    result = ring_all_reduce(tensor, rank, world_size)
+    
+    if rank == 0:
+        print("\nAfter ring all-reduce (SUM):")
+    
+    dist.barrier()
+    print(f"Rank {rank}: {result.cpu().tolist()}")
+    dist.barrier()
+    
+    if rank == 0:
+        expected_sum = sum(range(1, world_size + 1))
+        print(f"\nExpected sum of first element: {expected_sum}")
+        print(f"Actual result: {result[0].item()}")
+        print(f"✓ All ranks synchronized!" if abs(result[0].item() - expected_sum) < 1e-5 else "✗ Error!")
+    
+    dist.destroy_process_group()
 
-# TODO: Print initial tensor for each rank
-# dist.barrier()
-# print(f"Rank {rank}: {tensor.cpu().tolist()}")
-# dist.barrier()
 
-# TODO: Use comms.allreducemean() to average the tensor across all ranks
-# comms.allreducemean(tensor)
-
-if rank == 0:
-    print("\nAfter all-reduce_mean:")
-
-# TODO: Print result and verify all ranks have the same averaged tensor
-# dist.barrier()
-# print(f"Rank {rank}: {tensor.cpu().tolist()}")
-# dist.barrier()
-
-# TODO: Clean up
-# dist.destroy_process_group()
-
+if __name__ == "__main__":
+    main()

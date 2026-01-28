@@ -5,7 +5,7 @@ import torch.optim as optim
 
 from src.comms import DataParallelComms, init_distributed
 from src.model import FullMLP
-from src.schedule import register_ddp_hooks
+from src.optimisations import register_ddp_hooks
 
 # Hyperparameters
 BATCH_SIZE = 32
