@@ -16,21 +16,11 @@ DDP becomes inefficient when:
 2. **Network too slow:** High latency, low bandwidth
 3. **Batch size per rank too small:** Can't hide communication
 
-## Scaling Efficiency
-
-With `n` GPUs, ideal speedup is `n`x (linear scaling).
-
-**Hypothesized efficiency:**
-- **2 GPUs:** 85-95% efficiency
-- **4 GPUs:** 75-90% efficiency
-- **8 GPUs:** 65-85% efficiency
-- **16+ GPUs:** 50-75% efficiency (communication becomes bottleneck)
-
 ## Bottleneck Analysis
 
 ### Computation-Bound
 Computation time >> communication time:
-- DDP scales near-linearly
+- DDP scales near-linearly (ideal speedup)
 - **Scaling:** Add more GPUs
 
 ### Communication-Bound

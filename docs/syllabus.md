@@ -22,12 +22,8 @@
 
 ### [Optimisations](./optimisations.md)
 
-- Hooks and gradient bucketing:
-  - Hooks enable automatic gradient synchronization.
-  - Bucketing groups gradients into larger messages.
-- Run `src/hooks.py` and `src/bucketing.py`.
+- Hooks and gradient bucketing
 
 ### [Performance Analysis](./performance.md)
 
 - When is DDP worth it, how well does it scale?
-- Profile DDP training and analyze bottlenecks.
