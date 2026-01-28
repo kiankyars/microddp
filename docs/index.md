@@ -3,6 +3,5 @@
  - [Intro](./intro.md)
  - [All-Reduce](./allreduce.md)
  - [Naive DDP](./ddp.md)
- - [Gradient Hooks](./hooks.md)
- - [Gradient Bucketing](./bucketing.md)
+ - [Optimisations](./optimisations.md)
  - [Performance Analysis](./performance.md)
