@@ -10,7 +10,7 @@ Training large models on a single GPU faces three challenges:
 
 - Scale horizontally (multiple GPUs/servers) or vertically (bigger GPU).
 
-![](../imgs/0.png)
+![](./imgs/0.png)
 
 ## Data Parallel vs Model Parallel
 
@@ -32,36 +32,36 @@ Training large models on a single GPU faces three challenges:
 | Communication                | Via threads, subject to Python GIL and I/O overhead | Uses collectives (e.g. all-reduce) outside Python GIL                   |
 | Performance                  | Generally slower, even single-machine                | Much faster, highly scalable; preferred for all single/multi-node cases |
 
-![](../imgs/1.png)
+![](./imgs/1.png)
 
 ## Distributed Data Parallel (DDP) Workflow
 
 1. **Broadcast**: Initialize model weights on one node, send to all nodes.
 
-   ![](../imgs/2.png)
-   ![](../imgs/3.png)
+   ![](./imgs/2.png)
+   ![](./imgs/3.png)
 
 2. **Forward/Backward**: Each node trains on different data chunk, computes local gradients.
 
-   ![](../imgs/4.png)
+   ![](./imgs/4.png)
 
 3. **All-Reduce**: Sum gradients across all nodes, distribute result to all nodes.
 
-   ![](../imgs/5.png)
-   ![](../imgs/6.png)
+   ![](./imgs/5.png)
+   ![](./imgs/6.png)
 
 4. **Update**: Each node updates its model using the averaged gradients.
 
-   ![](../imgs/7.png)
+   ![](./imgs/7.png)
 
 ## Communication Primitives
 
 ### Reduce (All → One)
 
-![](../imgs/8.png)
-![](../imgs/9.png)
-![](../imgs/10.png)
-![](../imgs/11.png)
+![](./imgs/8.png)
+![](./imgs/9.png)
+![](./imgs/10.png)
+![](./imgs/11.png)
 
 ### Broadcast (One → All)
 
@@ -69,17 +69,17 @@ Training large models on a single GPU faces three challenges:
 
 - Time: O(n) where n = number of receivers.
 
-![](../imgs/12.png)
+![](./imgs/12.png)
 
 **Naive Collective Communication**:
 
-![](../imgs/13.png)
+![](./imgs/13.png)
 
 **Smart Collective Communication**:
 
-![](../imgs/14.png)
-![](../imgs/15.png)
-![](../imgs/16.png)
+![](./imgs/14.png)
+![](./imgs/15.png)
+![](./imgs/16.png)
 
 ## PyTorch DDP Optimizations
 
@@ -90,7 +90,7 @@ Training large models on a single GPU faces three challenges:
 
 ### Bucketing
 
-![](../imgs/17.png)
+![](./imgs/17.png)
 
 ## Failover and Checkpointing
 

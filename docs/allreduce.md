@@ -4,7 +4,7 @@
 
 We have `n` ranks, each with a tensor. We want all ranks to have the **sum** (or average) of all tensors.
 
-Notation: \(n\) = number of ranks/GPUs, \(S\) = size of the tensor (in bytes or elements).
+Notation: n = number of ranks/GPUs, S = size of the tensor (in bytes or elements).
 
 ```
 Rank 0: [1, 2, 3]
@@ -22,33 +22,30 @@ All ranks: [12, 15, 18]
 3. Rank 0 broadcasts the result back to all ranks.
 
 **Communication (total across the network):**
-- About \(2(n - 1)S \approx O(nS)\).
+- 2(n - 1) · S ≈ O(nS).
 
 ## Tree All-Reduce
 
-- Binary tree topology, giving \(\log n\) height.
-- Per-rank bandwidth: internal nodes send and receive about \(2S\), root and leaves about \(S\).
+- Binary tree topology, giving log n height.
+- Per-rank bandwidth: internal nodes send and receive 2S, root and leaves S.
 
 ## Ring All-Reduce
 
 **Phase 1 – Scatter-Reduce**
 - The tensor is split into chunks; on each hop, ranks **accumulate partial sums** for one chunk.
-- After \(n - 1\) steps, each rank holds **one chunk** of the final reduced tensor.
+- After n - 1 steps, each rank holds **one chunk** of the final reduced tensor.
 
 **Phase 2 – All-Gather**
 - Using the same ring, ranks circulate their final chunks.
-- After another \(n - 1\) steps, every rank has **all chunks**, i.e. the full all-reduce result.
+- After another n - 1 steps, every rank has **all chunks**, i.e. the full all-reduce result.
 
 **Communication:**
-- Per rank: \(2(n - 1)\cdot \frac{S}{n} \approx O(S)\).
-- Total across the network: \(2(n - 1)S \approx O(nS)\) (same order as naive, but bandwidth is used much more evenly).
+- Per rank: 2(n - 1) · (S / n) ≈ O(S).
+- Total across the network: 2(n - 1) · S ≈ O(nS) (same order as naive, but bandwidth is used much more evenly).
 
 ## Implementation
 
-See `examples/allreduce.py` for educational implementations:
-- `naive_all_reduce()`: Root-based implementation (simple but bottlenecked)
-- `ring_all_reduce()`: Ring implementation using scatter-reduce + all-gather
-- `compare_all_reduce_algorithms()`: Benchmark comparing naive, ring and PyTorch’s optimized all-reduce
+See `examples/allreduce.py`
 
 ## Further Reading
 

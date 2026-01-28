@@ -16,6 +16,32 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
+
+class DataParallelComms:
+
+    def __init__(self, rank, world_size):
+        self.rank = rank
+        self.world_size = world_size
+
+    def all_reduce_mean(self, tensor):
+        """
+        All-reduce with averaging implemented from first principles.
+        
+        Algorithm:
+        1. Reduce: Sum all tensors to rank 0 (using reduce)
+        2. Broadcast: Distribute the sum from rank 0 to all ranks (using broadcast)
+        3. Average: Divide by world_size to get the mean
+        
+        This demonstrates that all-reduce = reduce + broadcast.
+        """
+        # Step 1: Reduce all tensors to rank 0 (sum operation)
+        dist.reduce(tensor, dst=0, op=dist.ReduceOp.SUM)
+        
+        # Step 2: Broadcast the sum from rank 0 to all ranks
+        dist.broadcast(tensor, src=0)
+        
+        # Step 3: Average by dividing by world_size
+        tensor.div_(self.world_size)
 class AllReduceAlgorithms:
     """
     Educational implementations of all-reduce algorithms.

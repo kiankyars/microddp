@@ -1,6 +1,6 @@
 # microddp
 
-![](/imgs/microddp.png)
+![](docs/imgs/microddp.png)
 
 ## Quick Start
 

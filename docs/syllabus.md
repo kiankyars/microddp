@@ -14,15 +14,11 @@
 
 ### [All-Reduce](./allreduce.md)
 
-- Implement ring all-reduce from scratch.
-
-### [Naive DP](./naive.md)
-
-- Naive Data Parallel. Forward on local chunk, backward, then all-reduce gradients using comms.
+- How we sync gradients accross devices.
 
 ### [DDP](./ddp.md)
 
-- DistributedDataParallel with gradient hooks for automatic all-reduce during backward.
+- Forward on local chunk, backward, then all-reduce gradients using comms.
 
 ### [Gradient Hooks](./hooks.md)
 

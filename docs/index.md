@@ -2,7 +2,6 @@
  - [Syllabus](./syllabus.md)
  - [Intro](./intro.md)
  - [All-Reduce](./allreduce.md)
- - [Naive DP](./naive.md)
  - [DDP](./ddp.md)
  - [Gradient Hooks](./hooks.md)
  - [Gradient Bucketing](./bucketing.md)

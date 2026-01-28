@@ -1,32 +1,21 @@
 # DistributedDataParallel (DDP)
 
+## Naive Approach: All-Reduce After Backward
+
+```python
+loss = model(input)
+loss.backward()
+for param in model.parameters():
+    if param.grad is not None:
+        all_reduce_mean(param.grad)
+optim.step()
+```
+
+- **No computation/communication overlap:** Must complete entire forward+backward pass before any communication
+
 ## Concept
 
 DDP improves upon Naive DP by:
 
 1. **Gradient Hooks:** Automatically all-reduce gradients during backward pass
-2. **Bucket-based All-Reduce:** Groups small gradients into buckets for efficiency
-3. **Overlap Computation/Communication:** Can overlap gradient computation with communication
-
-## Algorithm
-
-```
-For each training step:
-  1. Split batch across ranks
-  2. Forward pass on local chunk
-  3. Backward pass (gradients automatically all-reduced via hooks)
-  4. Optimizer step
-```
-
-## Gradient Hooks
-
-Gradient hooks are registered on each parameter. When `loss.backward()` is called:
-
-1. Gradients are computed locally
-2. Hooks automatically trigger all-reduce
-3. All ranks end up with averaged gradients
-
-## Implementation
-
-See `src/schedule.py::ddp_step` and `register_ddp_hooks`
-
+2. **Bucket-based All-Reduce:** Groups gradients into buckets for efficiency
