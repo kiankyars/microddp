@@ -2,6 +2,5 @@
  - [Syllabus](./syllabus.md)
  - [Intro](./intro.md)
  - [All-Reduce](./allreduce.md)
- - [Naive DDP](./naive.md)
  - [Optimisations](./optimisations.md)
  - [Performance](./performance.md)

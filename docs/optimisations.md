@@ -1,5 +1,18 @@
 # Optimisations
 
+## Naive Approach: All-Reduce After Backward
+
+```python
+loss = model(input)
+loss.backward()
+for param in model.parameters():
+    if param.grad is not None:
+        allreducemean(param.grad)
+optim.step()
+```
+
+- **No computation/communication overlap:** Must complete entire forward+backward pass before any communication
+
 ## Hooks
 
 - Last layers compute gradients first, hooks all-reduce them once they're calculated

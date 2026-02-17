@@ -1,4 +1,4 @@
-# All-Reduce Algorithms from First Principles
+# All-Reduce Algorithms Communication Overhead
 
 ## Overview
 
@@ -21,13 +21,17 @@ All ranks: [12, 15, 18]
 2. Rank 0 sums the tensors.
 3. Rank 0 broadcasts the result back to all ranks.
 
-**Communication (total across the network):**
-- 2(n - 1) · S ≈ O(nS).
+**Communication:**
+- Per rank (orchestrator): (n - 1) · S ≈ O(nS).
+- Total across the network: 2(n - 1) · S ≈ O(nS).
 
 ## Tree All-Reduce
 
 - Binary tree topology, giving log n height.
-- Per-rank bandwidth: internal nodes send and receive 2S, root and leaves S.
+
+**Communication:**
+- Per rank: internal nodes send and receive 2S, root and leaves S.
+- Total across the network: 
 
 ## Ring All-Reduce
 
