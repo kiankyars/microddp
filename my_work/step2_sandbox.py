@@ -27,7 +27,7 @@ if rank == 0:
     print("Initial tensors:")
 
 dist.barrier()
-print(f"  Rank {rank}: {tensor.cpu().tolist()}")
+print(f"  Rank {rank}: {tensor.tolist()}")
 dist.barrier()
 
 dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
@@ -35,7 +35,7 @@ dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
 if rank == 0:
     print("After all_reduce SUM:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor.cpu().tolist()}")
+print(f"  Rank {rank}: {tensor.tolist()}")
 dist.barrier()
 
 # =============================================================================
@@ -50,7 +50,7 @@ if rank == 0:
     print(f"\n=== Exercise 2: Compute MEAN ===")
     print("Initial tensors:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor2.cpu().tolist()}")
+print(f"  Rank {rank}: {tensor2.tolist()}")
 dist.barrier()
 
 # TODO: all_reduce and divide to get mean
@@ -60,7 +60,7 @@ tensor2 = tensor2 / world_size
 if rank == 0:
     print("After MEAN:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor2.cpu().tolist()}")  # Should be 2.5 for 4 ranks
+print(f"  Rank {rank}: {tensor2.tolist()}")  # Should be 2.5 for 4 ranks
 dist.barrier()
 
 # =============================================================================
@@ -74,7 +74,7 @@ if rank == 0:
     print(f"\n=== Exercise 3: broadcast ===")
     print("Before broadcast:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor3.cpu().tolist()}")
+print(f"  Rank {rank}: {tensor3.tolist()}")
 dist.barrier()
 
 # TODO: broadcast from rank 0 to all ranks
@@ -83,7 +83,7 @@ dist.broadcast(tensor3, src=0)
 if rank == 0:
     print("After broadcast from rank 0:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor3.cpu().tolist()}")  # All ranks should have [42.0]
+print(f"  Rank {rank}: {tensor3.tolist()}")  # All ranks should have [42.0]
 dist.barrier()
 
 # =============================================================================
@@ -97,7 +97,7 @@ if rank == 0:
     print(f"\n=== Exercise 4: reduce to rank 0 ===")
     print("Before reduce:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor4.cpu().tolist()}")
+print(f"  Rank {rank}: {tensor4.tolist()}")
 dist.barrier()
 
 # TODO: reduce (SUM) to rank 0
@@ -106,7 +106,7 @@ dist.reduce(tensor4, dst=0, op=dist.ReduceOp.SUM)
 if rank == 0:
     print("After reduce to rank 0:")
 dist.barrier()
-print(f"  Rank {rank}: {tensor4.cpu().tolist()}")  # Only rank 0 has the sum
+print(f"  Rank {rank}: {tensor4.tolist()}")  # Only rank 0 has the sum
 dist.barrier()
 
 cleanup()

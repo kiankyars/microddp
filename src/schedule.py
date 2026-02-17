@@ -1,8 +1,3 @@
-import torch
-import torch.distributed as dist
-from bucketing import BucketedDDPHooks
-
-
 def baseline_step(model, input_batch, target_batch, device):
     """
     Single-process baseline step:

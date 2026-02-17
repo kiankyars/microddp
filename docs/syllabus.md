@@ -4,10 +4,6 @@
 
 - What is distributed training?
 
-### [Baseline](https://github.com/kiankyars/microddp/blob/main/src/baseline.py)
-
-- `nn.Sequential` 16 layer MLP.
-
 ### [Manual](https://github.com/kiankyars/microddp/blob/main/src/manual.py)
 
 - Manually split the batch across two "GPUs" and average gradients.
