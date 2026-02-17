@@ -70,9 +70,6 @@ Training large models on a single GPU faces three challenges:
 - Time: O(n) where n = number of receivers.
 
 <img src="./imgs/12.png" width="360">
-
-**Naive Collective Communication**:
-
 <img src="./imgs/13.png" width="360">
 
 **Smart Collective Communication**:
@@ -94,5 +91,5 @@ Training large models on a single GPU faces three challenges:
 
 ## Failover and Checkpointing
 
-- Rank 0 saves model checkpoints to avoid conflicts.
+- Rank 0 saves model checkpoints as source of truth.
 
