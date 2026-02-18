@@ -8,10 +8,23 @@ import time
 import torch
 import torch.distributed as dist
 
+import time
+import torch
+import torch.distributed as dist
+
 from src.comms import init_distributed, cleanup
 from src.model import FullMLP
 from src.allreduce import allreduce1, allreduce2, allreduce3, allreduce4
-from src.optimisations import GradientBucket, BucketedDDPHooks
+from src.optimisations import register_bucketed_hooks
+
+
+def allreducemean(tensor):
+    """
+    In-place all-reduce (SUM) followed by division by world_size.
+    """
+    world_size = dist.get_world_size()
+    dist.all_reduce(tensor, op=dist.ReduceOp.SUM)
+    tensor.div_(world_size)
 
 
 def compare_allreduce_algorithms(rank, world_size, device, tensor_size=1000, num_iterations=10):
@@ -98,7 +111,7 @@ def compare_hook_vs_manual_timing(model, input_chunk, target_chunk, device):
     # Manual all-reduce (sequential, no overlap)
     for param in model1.parameters():
         if param.grad is not None:
-            comms.allreducemean(param.grad)
+            allreducemean(param.grad)
     
     optimizer1.step()
     dist.barrier()
@@ -114,7 +127,7 @@ def compare_hook_vs_manual_timing(model, input_chunk, target_chunk, device):
             def make_hook():
                 def hook(grad):
                     if grad is not None:
-                        comms.allreducemean(grad)
+                        allreducemean(grad)
                     return grad
                 return hook
             param.register_hook(make_hook())
@@ -129,12 +142,11 @@ def compare_hook_vs_manual_timing(model, input_chunk, target_chunk, device):
     dist.barrier()
     hook_time = time.time() - start2
     
-    if dist.rank == 0:
+    if dist.get_rank() == 0:
         print("\n=== Hook vs Manual All-Reduce Timing ===")
         print(f"Manual (sequential): {manual_time*1000:.2f} ms")
         print(f"Hook-based: {hook_time*1000:.2f} ms")
         print(f"Speedup: {manual_time/hook_time:.2f}x")
-        print("Note: Actual speedup depends on model architecture and network bandwidth.")
 
 
 def compare_bucketed_vs_unbucketed(model, input_chunk, target_chunk, device):
@@ -153,15 +165,14 @@ def compare_bucketed_vs_unbucketed(model, input_chunk, target_chunk, device):
         # Unbucketed: all-reduce each gradient separately
         for param in model_copy1.parameters():
             if param.grad is not None:
-                dist.all_reduce
-                # allreducemean(param.grad)
+                allreducemean(param.grad)
         optimizer1.step()
     unbucketed_time = time.time() - start
     
     # Test bucketed
     model_copy2 = type(model)(model.net[0].in_features, len(model.net) // 2).to(device)
     optimizer2 = torch.optim.Adam(model_copy2.parameters())
-    bucketed_hooks = BucketedDDPHooks(model_copy2, comms, bucket_size_mb=25.0)
+    register_bucketed_hooks(model_copy2, bucket_size_mb=25.0)
     
     start = time.time()
     for _ in range(10):
@@ -171,7 +182,7 @@ def compare_bucketed_vs_unbucketed(model, input_chunk, target_chunk, device):
         optimizer2.step()
     bucketed_time = time.time() - start
     
-    if dist.rank == 0:
+    if dist.get_rank() == 0:
         print(f"\n=== Bucketing Performance Comparison ===")
         print(f"Unbucketed time: {unbucketed_time*1000:.2f} ms")
         print(f"Bucketed time: {bucketed_time*1000:.2f} ms")
