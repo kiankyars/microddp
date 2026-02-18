@@ -8,10 +8,6 @@ import time
 import torch
 import torch.distributed as dist
 
-import time
-import torch
-import torch.distributed as dist
-
 from src.comms import init_distributed, cleanup
 from src.model import FullMLP
 from src.allreduce import allreduce1, allreduce2, allreduce3, allreduce4
