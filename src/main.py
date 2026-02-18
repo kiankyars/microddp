@@ -1,11 +1,15 @@
 """
 torchrun --nproc-per-node=4 src/main.py
 
-In Data Parallelism:
+DistributedDataParallel:
 - Each rank has a complete copy of the model
 - Each rank processes a different chunk of the batch
 - Gradients are averaged across all ranks after backward pass
 - All ranks update with the same averaged gradients
+
+Gradient hooks:
+- Gradients are reduced asynchronously DURING backward (via hooks)
+- Enables computation/communication overlap
 """
 
 import time
@@ -14,8 +18,9 @@ import torch
 import torch.optim as optim
 
 # Import our modules
-from comms import DataParallelComms, init_distributed, cleanup
+from comms import init_distributed, cleanup
 from model import FullMLP
+from optimisations import register_hooks
 
 # Hyperparameters
 BATCH_SIZE = 32
@@ -25,7 +30,6 @@ STEPS = 50
 
 # 1. Setup Distributed Environment
 rank, world_size, device = init_distributed()
-comms = DataParallelComms(rank, world_size)
 
 # Set base seed, then offset by rank for different data chunks
 torch.manual_seed(42)
@@ -54,24 +58,16 @@ input_chunk = full_input[start_idx:end_idx].to(device)
 target_chunk = full_target[start_idx:end_idx].to(device)
 
 # 5. Training Loop
-register_ddp_hooks(model, comms)
+register_hooks(model)
 
 start_time = time.time()
 model.train()
 for step in range(STEPS):
     optimizer.zero_grad()
-    """
-    DistributedDataParallel step with gradient hooks.
-    
-    Efficiency:
-    - Gradients are reduced asynchronously DURING backward (via hooks)
-    - Enables computation/communication overlap
-    """
     # Forward pass
     loss = model(input_chunk, target_chunk)
 
     # Backward pass (gradients are automatically all-reduced via hooks)
-    # register_ddp_hooks must have been called on the model previously.
     loss.backward()
 
     # Optimizer step (all ranks have same averaged gradients)

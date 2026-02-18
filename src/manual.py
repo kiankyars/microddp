@@ -37,7 +37,7 @@ input2 = fixed_input[BATCH_SIZE // 2 :].to(device2)
 target2 = fixed_target[BATCH_SIZE // 2 :].to(device2)
 
 # 3. Training Loop
-print("--- Training Manual Data Parallel (Bridge to Distributed) ---")
+print("--- Training Manual Data Parallel ---")
 start_time = time.time()
 model1.train()
 model2.train()

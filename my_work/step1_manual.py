@@ -1,7 +1,6 @@
 import time
 from src.model import FullMLP
 import torch
-import torch.nn as nn
 import torch.optim as optim
 
 # 1. Hyperparameters
@@ -34,7 +33,7 @@ input2 = None  # TODO
 target2 = None  # TODO
 
 # 3. Training Loop
-print("--- Training Manual Data Parallel (Bridge to Distributed) ---")
+print("--- Training Manual Data Parallel ---")
 start_time = time.time()
 model1.train()
 model2.train()

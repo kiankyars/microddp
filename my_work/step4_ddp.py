@@ -24,7 +24,6 @@ model = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # TODO: Register gradient hooks for automatic all-reduce during backward
-register_hooks(model)
 
 # TODO: Split batch across ranks
 chunk_size = BATCH_SIZE // world_size
