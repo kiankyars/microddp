@@ -48,6 +48,27 @@ All ranks: [12, 15, 18]
 
 See `src/allreduce.py`
 
+## Double Buffering
+
+When using `dist.isend`, the data in `send_buff` isn't sent instantly. If you overwrite `send_buff` before the send finishes, you risk corrupting the outgoing data. To avoid this, ring all-reduce alternates between two buffers (`send_buff` and `recv_buff`).
+
+### 3-Rank Example (R0, R1, R2)
+
+Each rank starts with its tensor: $T_0$, $T_1$, $T_2$.
+
+- **Start:**  
+  R0: `send_buff = T_0`, `accum = T_0`  
+  R1: `send_buff = T_1`, `accum = T_1`  
+  R2: `send_buff = T_2`, `accum = T_2`
+
+- **Step 0 (even):**  
+  Each rank sends its `send_buff` to the right, receives into `recv_buff` from the left, and adds `recv_buff` to `accum`.  
+  (e.g., R0 now has $T_0 + T_2$ in `accum`)
+
+- **Step 1 (odd):**  
+  Each rank sends its `recv_buff` to the right, receives into `send_buff` from the left, and adds `send_buff` to `accum`.  
+  (e.g., R0's `accum` is now $T_0 + T_2 + T_1$ — the total sum.)
+
 ## Further Reading
 
 - [Baidu's All-Reduce Paper](https://github.com/baidu-research/baidu-allreduce)

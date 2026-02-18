@@ -14,9 +14,12 @@
 
 ### [Sandbox](https://github.com/kiankyars/microddp/blob/main/my_work/step2_sandbox.py)
 
+- Play with all-reduce ops.
+
 ### [All-Reduce](./allreduce.md)
 
-- How we sync gradients accross devices.
+- [Various implementations](https://github.com/kiankyars/microddp/blob/main/src/allreduce.py).
+- [Lab](https://github.com/kiankyars/microddp/blob/main/my_work/step3_allreduce.py).
 
 ### [Optimisations](./optimisations.md)
 

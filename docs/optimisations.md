@@ -65,7 +65,7 @@ param.register_hook(make_hook())
 ## Demo
 
 ```bash
-torchrun --nproc-per-node=4 src/hooks.py
+torchrun --nproc-per-node=4 src/examples.py
 ```
 
 ## Pitfalls
