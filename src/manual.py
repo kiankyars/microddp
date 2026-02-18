@@ -66,10 +66,8 @@ for step in range(STEPS):
     optimizer2.step()
 
     if step % 5 == 0:
-        avg_loss = (loss1.item() + loss2.item()) / 2.0
-        print(f"Step {step:02d} | Loss: {avg_loss:.6f}")
+        print(f"Step {step:02d} | Loss: {loss1.item():.6f}")
 
 duration = time.time() - start_time
-final_loss = (loss1.item() + loss2.item()) / 2.0
-print(f"Final Loss: {final_loss:.6f} | Time: {duration:.3f}s")
+print(f"Final Loss: {loss1.item():.6f} | Time: {duration:.3f}s")
 
