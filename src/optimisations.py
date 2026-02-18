@@ -5,15 +5,13 @@ import torch.distributed as dist
 def register_hooks(model):
     """All-reduce each gradient as it's computed during backward."""
     world_size = dist.get_world_size()
+    def hook(grad):
+        dist.all_reduce(grad, op=dist.ReduceOp.SUM)
+        grad.div_(world_size)
+        return grad
     for param in model.parameters():
         if param.requires_grad:
-            def make_hook(p):
-                def hook(grad):
-                    dist.all_reduce(grad, op=dist.ReduceOp.SUM)
-                    grad.div_(world_size)
-                    return grad
-                return hook
-            param.register_hook(make_hook(param))
+            param.register_hook(hook)
 
 
 class GradientBucket:
