@@ -1,7 +1,3 @@
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import time
 from src.model import FullMLP
 import torch
@@ -21,6 +17,7 @@ device1 = None  # TODO
 device2 = None  # TODO
 
 model1 = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device1)
+torch.manual_seed(42)  # Reset seed so model2 has same initial weights
 model2 = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device2)
 
 optimizer1 = optim.Adam(model1.parameters(), lr=0.001)

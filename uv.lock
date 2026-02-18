@@ -125,7 +125,7 @@ wheels = [
 [[package]]
 name = "microddp"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -141,7 +141,7 @@ dev = [
 requires-dist = [
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
-    { name = "torch", specifier = ">=2.9.1" },
+    { name = "torch", specifier = ">=2.5.0" },
 ]
 provides-extras = ["dev"]
 
