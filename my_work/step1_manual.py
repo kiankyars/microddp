@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import time
 from src.model import FullMLP
 import torch
@@ -12,12 +16,11 @@ STEPS = 50
 # 2. Setup
 torch.manual_seed(42)
 
-# TODO: Simulate 2 GPUs manually (use "cuda:0"/"cuda:1" if available)
-device1 = "cpu"  # TODO
-device2 = "cpu"  # TODO
+# TODO: Simulate 2 GPUs manually
+device1 = None  # TODO
+device2 = None  # TODO
 
 model1 = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device1)
-torch.manual_seed(42)  # Reset so model2 starts with identical weights
 model2 = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device2)
 
 optimizer1 = optim.Adam(model1.parameters(), lr=0.001)
@@ -27,11 +30,11 @@ optimizer2 = optim.Adam(model2.parameters(), lr=0.001)
 fixed_input = torch.randn(BATCH_SIZE, HIDDEN_DIM)
 fixed_target = torch.randint(0, 2, (BATCH_SIZE,))
 
-input1 = fixed_input[:BATCH_SIZE // 2].to(device1)   # TODO: slice the first half
-target1 = fixed_target[:BATCH_SIZE // 2].to(device1)  # TODO: slice the first half
+input1 = None  # TODO
+target1 = None  # TODO
 
-input2 = fixed_input[BATCH_SIZE // 2:].to(device2)   # TODO: slice the second half
-target2 = fixed_target[BATCH_SIZE // 2:].to(device2)  # TODO: slice the second half
+input2 = None  # TODO
+target2 = None  # TODO
 
 # 3. Training Loop
 print("--- Training Manual Data Parallel ---")

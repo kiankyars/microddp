@@ -48,7 +48,7 @@ def compare_allreduce_algorithms(rank, world_size, device, tensor_size=1000, num
     dist.barrier()
     start = time.time()
     for _ in range(num_iterations):
-        _ = allreduce2(rank, tensor.clone())
+        allreduce2(rank, tensor.clone())
         dist.barrier()
     allreduce2_time = (time.time() - start) / num_iterations
     

@@ -5,6 +5,10 @@ This file is for experimenting with PyTorch's distributed primitives.
 Run with: PYTHONPATH=. torchrun --nproc-per-node=4 my_work/step2_sandbox.py
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import torch
 import torch.distributed as dist
 

@@ -43,8 +43,6 @@ def allreduce2(rank, tensor):
     else:
         dist.recv(result, src=0)
 
-    return result
-
 
 def allreduce3(tensor):
     """

@@ -2,7 +2,7 @@
 Step 3: All-Reduce from Scratch
 
 This exercise implements ring all-reduce, the O(n) algorithm used in DDP.
-Run with: PYTHONPATH=. torchrun --nproc-per-node=4 my_work/step3_allreduce.py
+Run with: torchrun --nproc-per-node=4 my_work/step3_allreduce.py
 
 Ring all-reduce works in two phases:
 1. Scatter-Reduce: Data moves in a ring, accumulating partial sums
@@ -10,6 +10,10 @@ Ring all-reduce works in two phases:
 
 This achieves O(n) communication complexity vs O(n²) for naive approaches.
 """
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import torch
 import torch.distributed as dist
