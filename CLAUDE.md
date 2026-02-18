@@ -35,18 +35,18 @@ uv sync
 ### Running Distributed Training
 Launch a 4-process distributed training session using `torchrun`:
 ```bash
-uv run torchrun --nproc-per-node=4 src/main.py
+torchrun --nproc-per-node=4 src/main.py
 ```
 
 ### Running Performance Benchmarks
 To compare different all-reduce implementations and synchronization strategies:
 ```bash
-uv run torchrun --nproc-per-node=4 src/examples.py
+torchrun --nproc-per-node=4 src/examples.py
 ```
 
 ### Linting
 ```bash
-uv run ruff check .
+uvx ruff check --fix --exclude my_work
 ```
 
 ## Development Conventions

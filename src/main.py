@@ -18,7 +18,7 @@ import torch
 import torch.optim as optim
 
 # Import our modules
-from comms import init_distributed, cleanup
+from comms import cleanup, init_distributed
 from model import FullMLP
 from optimisations import register_hooks
 

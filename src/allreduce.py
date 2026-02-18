@@ -26,7 +26,7 @@ def allreduce2(rank, tensor):
     """
     result = tensor.clone()
     size = dist.get_world_size()
-    
+
     # Phase 1: Reduce to rank 0
     if rank == 0:
         for src_rank in range(1, dist.get_world_size()):
@@ -35,7 +35,7 @@ def allreduce2(rank, tensor):
             result += recv_tensor
     else:
         dist.send(tensor, dst=0)
-    
+
     # Phase 2: Broadcast from rank 0
     if rank == 0:
         for dst_rank in range(1, size):

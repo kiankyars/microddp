@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```bash
-uv run torchrun --nproc-per-node=4 src/main.py
+torchrun --nproc-per-node=4 src/main.py
 ```
 
 ## Architecture
