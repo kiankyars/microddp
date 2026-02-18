@@ -20,7 +20,6 @@ The project demonstrates the evolution of data parallelism:
 
 - **`src/comms.py`**: Handles distributed environment initialization (`init_distributed`) and provides a wrapper for communication primitives.
 - **`src/allreduce.py`**: Educational implementations of All-Reduce algorithms (Reduce+Broadcast, Ring All-Reduce, etc.).
-- **`src/schedule.py`**: Implements training steps for different DP strategies (Naive DP vs. DDP).
 - **`src/optimisations.py`**: Contains `GradientBucket` and `BucketedDDPHooks` for overlapping backward computation with communication.
 - **`src/model.py`**: Defines a `FullMLP` model used as a benchmark for training.
 - **`src/main.py`**: The primary entry point for running distributed training experiments.

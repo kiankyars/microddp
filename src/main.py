@@ -16,7 +16,6 @@ import torch.optim as optim
 # Import our modules
 from comms import DataParallelComms, init_distributed, cleanup
 from model import FullMLP
-from schedule import naive_data_parallel_step, register_ddp_hooks, baseline_step
 
 # Hyperparameters
 BATCH_SIZE = 32
@@ -55,13 +54,25 @@ input_chunk = full_input[start_idx:end_idx].to(device)
 target_chunk = full_target[start_idx:end_idx].to(device)
 
 # 5. Training Loop
+register_ddp_hooks(model, comms)
+
 start_time = time.time()
 model.train()
 for step in range(STEPS):
     optimizer.zero_grad()
+    """
+    DistributedDataParallel step with gradient hooks.
+    
+    Efficiency:
+    - Gradients are reduced asynchronously DURING backward (via hooks)
+    - Enables computation/communication overlap
+    """
+    # Forward pass
+    loss = model(input_chunk, target_chunk)
 
-    # Data parallel step: forward, backward, all-reduce gradients
-    loss = naive_data_parallel_step(model, comms, input_chunk, target_chunk, device)
+    # Backward pass (gradients are automatically all-reduced via hooks)
+    # register_ddp_hooks must have been called on the model previously.
+    loss.backward()
 
     # Optimizer step (all ranks have same averaged gradients)
     optimizer.step()

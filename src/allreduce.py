@@ -23,11 +23,11 @@ def allreduce1(tensor: torch.Tensor):
 def allreduce2(rank, tensor):
     """
     Manual all-reduce using explicit send/recv operations.
-    Educational implementation showing the underlying communication pattern.
     """
     result = tensor.clone()
+    size = dist.get_world_size()
     
-    # Phase 1: Gather to rank 0
+    # Phase 1: Reduce to rank 0
     if rank == 0:
         for src_rank in range(1, dist.get_world_size()):
             recv_tensor = torch.zeros_like(tensor)
@@ -37,9 +37,11 @@ def allreduce2(rank, tensor):
         dist.send(tensor, dst=0)
     
     # Phase 2: Broadcast from rank 0
-    dist.broadcast(result, src=0)
-    
-    return result
+    if rank == 0:
+        for dst_rank in range(1, size):
+            dist.send(result, dst=dst_rank)
+    else:
+        dist.recv(result, src=0)
 
 
 def allreduce3(tensor):
@@ -48,7 +50,7 @@ def allreduce3(tensor):
     More bandwidth efficient as it reduces data movement.
     """
     size = dist.get_world_size()
-    input_list = torch.chunk(tensor, size)
+    input_list = list(torch.chunk(tensor, size))
     scattered_chunk = torch.zeros_like(input_list[0])
     dist.reduce_scatter(output=scattered_chunk, input_list=input_list)
     # After reduce_scatter, each scattered_chunk is the sum of that chunk across all ranks

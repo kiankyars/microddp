@@ -1,5 +1,5 @@
 """
-Step 2: Sandbox for learning dist.all_reduce
+Step 2: Sandbox for dist.all_reduce
 
 This file is for experimenting with PyTorch's distributed primitives.
 Run with: PYTHONPATH=. torchrun --nproc-per-node=4 my_work/step2_sandbox.py

@@ -26,11 +26,13 @@ Training large models on a single GPU faces three challenges:
 
 | Aspect                       | DataParallel (DP)                                     | DistributedDataParallel (DDP)                                           |
 |------------------------------|------------------------------------------------------|-------------------------------------------------------------------------|
-| Process Model                | Single-process, multi-threaded                       | Multi-process, each process controls one device (GPU)                   |
+| Process Model                | Single-process, multi-threaded                       | Multi-process, typically one process per device (GPU)                   |
 | Machine Support              | Only works on a single machine                       | Supports both single-machine and multi-machine setups                   |
-| Model Replication            | Replicates model across devices within one process (overhead)   | Each process gets its own model replica, handles a subset of the data   |
-| Communication                | Via threads, subject to Python GIL and I/O overhead | Uses collectives (e.g. all-reduce) outside Python GIL                   |
-| Performance                  | Generally slower, even single-machine                | Much faster, highly scalable; preferred for all single/multi-node cases |
+| Model Replication            | Replicated to all devices on every forward pass (high overhead) | Model is replicated once at startup; each process has its own replica   |
+| Communication                | Via threads; master process gathers grads (GIL bottleneck) | Collectives (e.g. all-reduce) run asynchronously outside the GIL        |
+| Performance                  | Generally slower due to replication and GIL         | Much faster; enables computation/communication overlap                  |
+
+> A process is an independent program with its own memory; a thread is a lightweight unit of work within a process that shares the same memory space with other threads of that process. Processes are isolated, while threads are not.
 
 <img src="./imgs/1.png" width="480">
 

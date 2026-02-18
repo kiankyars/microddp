@@ -3,7 +3,7 @@ import time
 import torch
 import torch.optim as optim
 
-from src.comms import DataParallelComms, init_distributed
+from src.comms import init_distributed
 from src.model import FullMLP
 from src.optimisations import register_ddp_hooks
 
@@ -15,7 +15,6 @@ STEPS = 50
 
 # Setup distributed environment
 rank, world_size, device = init_distributed()
-comms = DataParallelComms(rank, world_size)
 
 if rank == 0:
     print(f"--- Starting Micro DDP with Hooks on {world_size} Processes ({device}) ---")
@@ -25,7 +24,7 @@ model = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # TODO: Register gradient hooks for automatic all-reduce during backward
-# register_ddp_hooks(model, comms)
+register_ddp_hooks(model)
 
 # TODO: Split batch across ranks
 chunk_size = BATCH_SIZE // world_size

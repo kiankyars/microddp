@@ -23,15 +23,13 @@ All ranks: [12, 15, 18]
 
 **Communication:**
 - Per rank (orchestrator): (n - 1) · S ≈ O(nS).
-- Total across the network: 2(n - 1) · S ≈ O(nS).
 
 ## Tree All-Reduce
 
 - Binary tree topology, giving log n height.
 
 **Communication:**
-- Per rank: internal nodes send and receive 2S, root and leaves S.
-- Total across the network: 
+- Per rank: O(S) (leaves send/recv 2S, root 4S, internal nodes up to 6S).
 
 ## Ring All-Reduce
 
@@ -45,7 +43,6 @@ All ranks: [12, 15, 18]
 
 **Communication:**
 - Per rank: 2(n - 1) · (S / n) ≈ O(S).
-- Total across the network: 2(n - 1) · S ≈ O(nS) (same order as naive, but bandwidth is used much more evenly).
 
 ## Implementation
 
