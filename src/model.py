@@ -17,9 +17,7 @@ class FullMLP(nn.Module):
         self.net = nn.Sequential(*layers)
         self.loss_fn = nn.CrossEntropyLoss()
 
-    def forward(self, x, targets=None):
+    def forward(self, x, targets):
         logits = self.net(x)
-        if targets is not None:
-            return self.loss_fn(logits, targets)
-        return logits
+        return self.loss_fn(logits, targets)
 
