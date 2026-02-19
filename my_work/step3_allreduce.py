@@ -48,8 +48,6 @@ def ring_all_reduce(tensor, rank, world_size):
         # TODO: Send result, receive, and update
         pass
     
-    # TODO: If op is MEAN, divide result by world_size
-    
     return result
 
 

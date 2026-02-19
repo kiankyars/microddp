@@ -59,28 +59,39 @@ def allreduce3(tensor):
     return torch.cat(scattered_chunks)
 
 
-def allreduce4(send, recv):
+def allreduce4(tensor):
     """
-    Ring all-reduce implementation.
-    Optimal for large tensors as it achieves full bandwidth utilization.
+    Chunked ring all-reduce: the bandwidth-optimal algorithm used in real DDP.
+
+    Phase 1 (Scatter-Reduce): each rank accumulates one chunk's sum.
+    Phase 2 (All-Gather): each rank propagates its reduced chunk to all others.
+
+    Each step transfers 1/N of the tensor, so all links are busy simultaneously.
+    Total communication: 2 * (N-1)/N * tensor_size (approaches 2x for large N).
     """
     rank = dist.get_rank()
     size = dist.get_world_size()
-    send_buff = send.clone()
-    recv_buff = send.clone()
-    accum = send.clone()
+    left, right = (rank - 1) % size, (rank + 1) % size
+    chunks = list(torch.chunk(tensor, size))
 
-    left = ((rank - 1) + size) % size
-    right = (rank + 1) % size
+    # Phase 1: Scatter-Reduce — after this, rank i holds the full sum of chunk i
+    for step in range(size - 1):
+        send_idx = (rank - step) % size
+        recv_idx = (rank - step - 1) % size
+        buf = torch.empty_like(chunks[recv_idx])
+        req = dist.isend(chunks[send_idx].contiguous(), right)
+        dist.recv(buf, left)
+        chunks[recv_idx] = chunks[recv_idx] + buf
+        req.wait()
 
-    for i in range(size - 1):
-        if i % 2 == 0:
-            send_req = dist.isend(send_buff, right)
-            dist.recv(recv_buff, left)
-            accum[:] += recv_buff[:]
-        else:
-            send_req = dist.isend(recv_buff, right)
-            dist.recv(send_buff, left)
-            accum[:] += send_buff[:]
-        send_req.wait()
-    recv[:] = accum[:]
+    # Phase 2: All-Gather — propagate each reduced chunk around the ring
+    for step in range(size - 1):
+        send_idx = (rank - step + 1) % size
+        recv_idx = (rank - step) % size
+        buf = torch.empty_like(chunks[recv_idx])
+        req = dist.isend(chunks[send_idx].contiguous(), right)
+        dist.recv(buf, left)
+        chunks[recv_idx] = buf
+        req.wait()
+
+    return torch.cat(chunks)
