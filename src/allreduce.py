@@ -43,6 +43,8 @@ def allreduce2(rank, tensor):
     else:
         dist.recv(result, src=0)
 
+    tensor.copy_(result)
+
 
 def allreduce3(tensor):
     """
@@ -50,13 +52,10 @@ def allreduce3(tensor):
     More bandwidth efficient as it reduces data movement.
     """
     size = dist.get_world_size()
-    input_list = list(torch.chunk(tensor, size))
-    scattered_chunk = torch.zeros_like(input_list[0])
-    dist.reduce_scatter(output=scattered_chunk, input_list=input_list)
-    # After reduce_scatter, each scattered_chunk is the sum of that chunk across all ranks
-    scattered_chunks = [torch.zeros_like(scattered_chunk) for _ in range(size)]
-    dist.all_gather(tensor_list=scattered_chunks, tensor=scattered_chunk)
-    return torch.cat(scattered_chunks)
+    chunks = list(torch.chunk(tensor, size))
+    scattered = torch.zeros_like(chunks[0])
+    dist.reduce_scatter(output=scattered, input_list=chunks)
+    dist.all_gather(tensor_list=chunks, tensor=scattered)
 
 
 def allreduce4(tensor):
@@ -94,4 +93,4 @@ def allreduce4(tensor):
         chunks[recv_idx] = buf
         req.wait()
 
-    return torch.cat(chunks)
+    tensor.copy_(torch.cat(chunks))
