@@ -57,7 +57,7 @@ def compare_allreduce_algorithms(rank, world_size, device, tensor_size=1000, num
     dist.barrier()
     start = time.time()
     for _ in range(num_iterations):
-        _ = allreduce3(tensor.clone())
+        allreduce3(tensor.clone())
         dist.barrier()
     allreduce3_time = (time.time() - start) / num_iterations
 
@@ -65,9 +65,7 @@ def compare_allreduce_algorithms(rank, world_size, device, tensor_size=1000, num
     dist.barrier()
     start = time.time()
     for _ in range(num_iterations):
-        send = tensor.clone()
-        recv = torch.zeros_like(tensor)
-        allreduce4(send, recv)
+        allreduce4(tensor.clone())
         dist.barrier()
     allreduce4_time = (time.time() - start) / num_iterations
 
