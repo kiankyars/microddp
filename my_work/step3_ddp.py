@@ -31,12 +31,12 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 full_input = torch.randn(BATCH_SIZE, HIDDEN_DIM)
 full_target = torch.randint(0, 2, (BATCH_SIZE,))
 
-chunk_size = BATCH_SIZE // world_size
+chunk_size = None  # TODO
 start_idx = None  # TODO
 end_idx = None    # TODO
 
-input_chunk = full_input[start_idx:end_idx].to(device)
-target_chunk = full_target[start_idx:end_idx].to(device)
+input_chunk = None    # TODO
+target_chunk = None    # TODO
 
 # 5. Training Loop
 start_time = time.time()

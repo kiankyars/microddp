@@ -52,7 +52,7 @@ full_target = torch.randint(0, 2, (BATCH_SIZE,))
 # Split batch across ranks
 chunk_size = BATCH_SIZE // world_size
 start_idx = rank * chunk_size
-end_idx = start_idx + chunk_size
+end_idx = (rank+1) * chunk_size
 
 input_chunk = full_input[start_idx:end_idx].to(device)
 target_chunk = full_target[start_idx:end_idx].to(device)
