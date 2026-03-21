@@ -24,6 +24,10 @@ if rank == 0:
 model = FullMLP(HIDDEN_DIM, TOTAL_LAYERS).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+# TODO: Broadcast initial model parameters from rank 0 to all ranks
+# so every replica starts with identical weights
+# Hint: loop over model.parameters() and call dist.broadcast(..., src=0)
+
 # TODO: Register gradient hooks for automatic all-reduce during backward
 # register_hooks(model)
 
