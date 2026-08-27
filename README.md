@@ -18,7 +18,16 @@ torchrun --nproc-per-node=4 src/main.py
 ## Repo Structure
 
 ```text
-WIP
+.
+├── docs/           # Course notes and GitHub Pages source
+├── my_work/        # Step-by-step course exercises
+├── src/            # Reference DDP implementation
+├── .gitignore
+├── CLAUDE.md
+├── CONTRIBUTING.md
+├── README.md
+├── pyproject.toml
+└── uv.lock
 ```
 
 ## Acknowledgments
