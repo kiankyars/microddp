@@ -13,7 +13,7 @@ torchrun --nproc-per-node=4 src/main.py
 - **`comms.py`**: Distributed communication primitives (all-reduce, barriers, broadcast, scatter/gather)
 - **`model.py`**: Full MLP model (replicated on each rank)
 - **`main.py`**: Training entry point
-- **`bucketing.py`**: Gradient bucketing for efficient communication
+- **`optimisations.py`**: Gradient hooks and bucketed all-reduce
 
 ## Repo Structure
 
